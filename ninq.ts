@@ -1,6 +1,7 @@
 import ConcatIterable from './operators/concat';
 import { Selector, Predicate, EqualityComparer, ReductionFunc } from './types';
 import DistinctIterable from './operators/distinct';
+import ExceptIterable from './operators/except';
 
 export class Ninq<T> implements Iterable<T> {
 	constructor(private readonly iterable: Iterable<T>) {
@@ -335,6 +336,50 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	elementAt(index: number) {
 		return Ninq.elementAt<T>(this, index);
+	}
+
+	/**
+	 * Returns an empty sequence that has the specified type argument
+	 *
+	 * @static
+	 * @template T - Itrable's elements' type
+	 * @returns {Iterable<T>} An empty Iterable<T> whose type argument is T
+	 *
+	 * @memberOf Ninq
+	 */
+	static *empty<T>(): Iterable<T> {
+		;
+	}
+
+	/**
+	 * Produces the set difference of two sequences by using the specified IEqualityComparer<T> to compare values
+	 *
+	 * @static
+	 * @template T - Itrable's elements' type
+	 * @param {Iterable<T>} left - An Iterable<T> whose elements that are not also in second will be returned
+	 * @param {Iterable<T>} right - An Iterable<T> whose elements that also occur in the first sequence
+	 * 	will cause those elements to be removed from the returned sequence
+	 * @param {EqualityComparer<T>} [comparer] - A comparer to compare values
+	 * @returns A sequence that contains the set difference of the elements of two sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	static except<T>(left: Iterable<T>, right: Iterable<T>, comparer?: EqualityComparer<T>)
+		: Iterable<T> {
+		return new ExceptIterable(left, right, comparer);
+	}
+	/**
+	 * Produces the set difference of two sequences by using the specified IEqualityComparer<T> to compare values
+	 *
+	 * @param {Iterable<T>} other - An Iterable<T> whose elements that also occur in the first sequence
+	 * 	will cause those elements to be removed from the returned sequence
+	 * @param {EqualityComparer<T>} [comparer] - A comparer to compare values
+	 * @returns A sequence that contains the set difference of the elements of two sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	except(other: Iterable<T>, comparer?: EqualityComparer<T>) {
+		return new Ninq(Ninq.except(this, other, comparer));
 	}
 
 	/**

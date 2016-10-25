@@ -1,6 +1,6 @@
 import { EqualityComparer } from '../types';
 
-interface Tracker<T> {
+export interface Tracker<T> {
 	wasReturned(item: T): boolean;
 }
 class DefaultTracker<T> implements Tracker<T> {
@@ -11,9 +11,16 @@ class DefaultTracker<T> implements Tracker<T> {
 		return result;
 	}
 }
-class ComparerTracker<T> implements Tracker<T> {
+export class ComparerTracker<T> implements Tracker<T> {
 	private readonly prevItems = [] as T[];
-	constructor(private readonly comparer: EqualityComparer<T>) { }
+	constructor(
+		private readonly comparer: EqualityComparer<T>,
+		items?: Iterable<T>
+	) {
+		if (items) {
+			[...this.prevItems] = items;
+		}
+	}
 	wasReturned(item: T) {
 		const result = 0 !== this.prevItems.filter(element => this.comparer(element, item)).length;
 		if (!result) {

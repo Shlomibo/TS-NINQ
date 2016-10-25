@@ -186,4 +186,17 @@ describe('Test Base ninq class', () => {
 
 	});
 
+
+	describe('empty', () => {
+
+		it('return an empty sequence', () => {
+			const seq = Ninq.empty<undefined>(),
+				it = seq[Symbol.iterator](),
+				{done} = it.next();
+			expect(done).toBeTruthy();
+		});
+
+	});
+
+
 });
