@@ -17,11 +17,13 @@
 		},
 		{
 			"taskName": "test",
-			"args": ["run", "test"]
+			"args": ["run", "test"],
+			"problemMatcher": "$tsc"
 		},
 		{
 			"taskName": "build",
-			"args": ["run", "compile"]
+			"args": ["run", "compile"],
+			"problemMatcher": "$tsc"
 		}
 	]
 }

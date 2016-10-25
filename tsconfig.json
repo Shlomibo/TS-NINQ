@@ -9,6 +9,9 @@
         "listFiles": true,
         "moduleResolution": "node",
         "newLine": "LF",
+        "lib": [
+            "es2016"
+        ],
 
         "noImplicitAny": true,
         "noFallthroughCasesInSwitch": true,

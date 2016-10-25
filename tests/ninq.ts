@@ -144,4 +144,28 @@ describe('Test Base ninq class', () => {
 
 	});
 
+
+	describe('Default if empty', () => {
+
+		it('Shoud return the same it if not empty', () => {
+			const it = [1, 2];
+			expect(Ninq.defaultIfEmpty(it, 0)).toBe(it);
+		});
+		it('Shoud return def value if empty', () => {
+			const it = [];
+			expect(Ninq.defaultIfEmpty(it, Infinity)).toEqual([Infinity]);
+		});
+		it('Shoud return the same ninq if not empty', () => {
+			const seq = new Ninq([1, 2]);
+			expect(seq.defaultIfEmpty(0)).toBe(seq);
+		});
+		it('Shoud return def value if empty', () => {
+			const seq = new Ninq<number>([]);
+			const [...result] = seq.defaultIfEmpty(Infinity);
+			expect(result).toEqual([Infinity]);
+		});
+
+	});
+
+
 });

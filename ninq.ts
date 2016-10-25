@@ -1,9 +1,6 @@
 import ConcatIterable from './operators/concat';
-
-export type ReductionFunc<T, U> = (aggregate: U | undefined, item: T, index: number) => U;
-export type Predicate<T> = (item: T, index: number) => boolean;
-export type Selector<T, U> = (item: T) => U;
-export type EqualityComparer<T> = (left: T, right: T) => boolean;
+import { Selector, Predicate, EqualityComparer, ReductionFunc } from './types';
+import DistinctIterable from './operators/distinct';
 
 export class Ninq<T> implements Iterable<T> {
 	constructor(private readonly iterable: Iterable<T>) {
@@ -186,12 +183,94 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	count(): number;
+	/**
+	 * Returns a number that represents how many elements in the specified sequence satisfy a condition
+	 *
+	 * @param {Predicate<T>} predicate - A function to test each element for a condition
+	 * @returns {number} - A number that represents how many elements in the sequence satisfy the condition in the predicate function
+	 *
+	 * @memberOf Ninq
+	 */
 	count(predicate: Predicate<T>): number;
 	count(predicate?: Predicate<T>) {
 		return typeof predicate === 'function'
 			? Ninq.count(this, predicate)
 			: Ninq.count(this);
 	}
+
+	/**
+	 * Returns the elements of the specified sequence or the specified value in a singleton collection if the sequence is empty
+	 *
+	 * @static
+	 * @template T - Itrable's elements' type
+	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {T} defValue - The value to return if the sequence is empty
+	 * @returns A sequence that contains defaultValue if source is empty; otherwise, source
+	 *
+	 * @memberOf Ninq
+	 */
+	static defaultIfEmpty<T>(it: Iterable<T>, defValue: T) {
+		return Ninq.some(it)
+			? it
+			: [defValue];
+	}
+	/**
+	 * Returns the elements of the specified sequence or the specified value in a singleton collection if the sequence is empty
+	 *
+	 * @param {T} defValue - The value to return if the sequence is empty
+	 * @returns A sequence that contains defaultValue if source is empty; otherwise, source
+	 *
+	 * @memberOf Ninq
+	 */
+	defaultIfEmpty(defValue: T) {
+		return this.some()
+			? this
+			: new Ninq(Ninq.defaultIfEmpty(this, defValue));
+	}
+
+	/**
+	 * Returns distinct elements from a sequence by using the default equality comparer to compare values
+	 *
+	 * @static
+	 * @template T - Itrable's elements' type
+	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @returns {Set<T>} A Set<T> that contains distinct elements from the source sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static distinct<T>(it: Iterable<T>): Set<T>;
+	/**
+	 * Returns distinct elements from a sequence by using a specified IEqualityComparer<T> to compare values
+	 *
+	 * @static
+	 * @template T - Itrable's elements' type
+	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {EqualityComparer<T>} comparer - A comparer to compare values
+	 * @returns {Iterable<T>} A sequence that contains distinct elements from the source sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static distinct<T>(it: Iterable<T>, comparer: EqualityComparer<T>): Iterable<T>;
+	static distinct<T>(it: Iterable<T>, comparer?: EqualityComparer<T>) {
+		return typeof comparer === 'function'
+			? new DistinctIterable(it, comparer)
+			: new Set(it);
+	}
+	/**
+	 * Returns distinct elements from a sequence by using a specified IEqualityComparer<T> to compare values
+	 *
+	 * @param {EqualityComparer<T>} [comparer] - A comparer to compare values
+	 * @returns A Ninq<T> that contains distinct elements from the source sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	distinct(comparer?: EqualityComparer<T>) {
+		const iterable = typeof comparer === 'function'
+			? Ninq.distinct(this, comparer)
+			: Ninq.distinct(this);
+		return new Ninq(iterable);
+	}
+
 	/**
 	 * Determines whether all elements of a sequence satisfy a condition
 	 *
