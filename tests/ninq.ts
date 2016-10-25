@@ -43,7 +43,54 @@ describe('Test Base ninq class', () => {
 				? Math.max(prev, current)
 				: current;
 		}
+	});
 
+
+	describe('Some functionality', () => {
+
+		it('return false for empty seq', () => {
+			const seq = new n.Ninq([]);
+			expect(seq.some()).toBe(false);
+			expect(seq.some(x => false)).toBe(false);
+		});
+
+		it('return true for single success', () => {
+			const seq = new n.Ninq([1, 2, 3]);
+			expect(seq.some()).toBe(true);
+			expect(seq.some((x, index) => index === 1)).toBe(true);
+		});
+
+		it('return true for all success', () => {
+			const seq = new n.Ninq([1, 2, 3]);
+			expect(seq.every(x => true)).toBe(true);
+		});
+
+		it('return false for no success', () => {
+			const seq = new n.Ninq([1, 2, 3]);
+			expect(seq.every(x => false)).toBe(false);
+		});
+	});
+	describe('Every functionality', () => {
+
+		it('return true for empty seq', () => {
+			const seq = new n.Ninq([]);
+			expect(seq.every(x => false)).toBe(true);
+		});
+
+		it('return false for single failure', () => {
+			const seq = new n.Ninq([1, 2, 3]);
+			expect(seq.every((x, index) => index !== 1)).toBe(false);
+		});
+
+		it('return false for all failure', () => {
+			const seq = new n.Ninq([1, 2, 3]);
+			expect(seq.every(x => false)).toBe(false);
+		});
+
+		it('return true for no failure', () => {
+			const seq = new n.Ninq([1, 2, 3]);
+			expect(seq.every(x => true)).toBe(true);
+		});
 	});
 
 });
