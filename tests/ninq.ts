@@ -93,4 +93,17 @@ describe('Test Base ninq class', () => {
 		});
 	});
 
+
+	describe('Average functionality', () => {
+
+		it('Calculates avg', () => {
+			const [...arr] = randomSeq(),
+				sum = arr.reduce((sum, val) => sum + val),
+				avg = sum / arr.length,
+				seq = new n.Ninq(arr);
+			expect(seq.average(x => x)).toBeCloseTo(avg, 10);
+		});
+
+	});
+
 });

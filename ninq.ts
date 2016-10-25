@@ -1,6 +1,7 @@
 
 export type ReductionFunc<T, U> = (aggregate: U | undefined, item: T, index: number) => U;
 export type Predicate<T> = (item: T, index: number) => boolean;
+export type Selector<T, U> = (item: T) => U;
 
 export class Ninq<T> implements Iterable<T> {
 	constructor(private readonly iterable: Iterable<T>) {
@@ -10,6 +11,30 @@ export class Ninq<T> implements Iterable<T> {
 		for (let item of this.iterable) {
 			yield item;
 		}
+	}
+
+	/**
+	 * Computes the average of a sequence of number values that are obtained by invoking
+	 * a transform function on each element of the input sequence
+	 *
+	 * @param {Selector<T, number>} selector - A transform function to apply to each element
+	 * @returns The average of the sequence of values
+	 *
+	 * @memberOf Ninq
+	 */
+	average(selector: Selector<T, number>) {
+		return this.reduce<number>(
+			(prev, item, index) => {
+				const num = selector(item);
+				if (index === 0) {
+					return num;
+				}
+				else {
+					prev *= index;
+					return (num + prev) / (index + 1);
+				}
+			}
+		);
 	}
 
 	/**
