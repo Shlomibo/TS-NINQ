@@ -168,4 +168,22 @@ describe('Test Base ninq class', () => {
 	});
 
 
+	describe('element at', () => {
+
+		it('return the element at the index', () => {
+			const seq = [1, 2, 3];
+			expect(Ninq.elementAt(seq, 1)).toBe(2);
+			expect(Ninq.elementAtOrDefault(seq, 1, undefined)).toBe(2);
+		});
+		it('return the default value if index is out of range', () => {
+			const seq = [1, 2, 3];
+			expect(Ninq.elementAtOrDefault(seq, 6, 666)).toBe(666);
+		});
+		it('throws if index is out of range', () => {
+			const seq = [1, 2, 3];
+			expect(() => Ninq.elementAt(seq, 6)).toThrow();
+		});
+
+	});
+
 });

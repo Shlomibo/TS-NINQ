@@ -272,6 +272,72 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
+	 * Returns the element at a specified index in a sequence or a default value if the index is out of range
+	 *
+	 * @static
+	 * @template T - Itrable's elements' type
+	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {number} index The zero-based index of the element to retrieve
+	 * @param {T} defValue The value to return if index is out of range
+	 * @returns default(TSource) if the index is outside the bounds of the source sequence;
+	 * 	otherwise, the element at the specified position in the source sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static elementAtOrDefault<T>(it: Iterable<T>, index: number, defValue: T) {
+		let i = 0;
+		for (let item of it) {
+			if (i++ === index) {
+				return item;
+			}
+		}
+		return defValue;
+	}
+	/**
+	 * Returns the element at a specified index in a sequence
+	 *
+	 * @static
+	 * @template T - Itrable's elements' type
+	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {number} index The zero-based index of the element to retrieve
+	 * @returns The element at the specified position in the source sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static elementAt<T>(it: Iterable<T>, index: number) {
+		const result = Ninq.elementAtOrDefault<T | '\0___ERR___\0'>(it, index, '\0___ERR___\0');
+		if (result === '\0___ERR___\0') {
+			throw new Error('Could not find element');
+		}
+		return result;
+	}
+	/**
+	 * Returns the element at a specified index in a sequence or a default value if the index is out of range
+	 *
+	 *
+	 * @param {number} index The zero-based index of the element to retrieve
+	 * @param {T} defValue The value to return if index is out of range
+	 * @returns default(TSource) if the index is outside the bounds of the source sequence;
+	 * 	otherwise, the element at the specified position in the source sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	elementAtOrDefault(index: number, defValue: T) {
+		return Ninq.elementAtOrDefault<T>(this, index, defValue);
+	}
+	/**
+	 * Returns the element at a specified index in a sequence
+	 *
+	 * @param {number} index The zero-based index of the element to retrieve
+	 * @returns The element at the specified position in the source sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	elementAt(index: number) {
+		return Ninq.elementAt<T>(this, index);
+	}
+
+	/**
 	 * Determines whether all elements of a sequence satisfy a condition
 	 *
 	 * @static
