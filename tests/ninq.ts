@@ -199,4 +199,30 @@ describe('Test Base ninq class', () => {
 	});
 
 
+	describe('First', () => {
+
+		it('Return the first of a seq', () => {
+			const seq = [1, 2],
+				resWODefault = Ninq.first(seq),
+				resWDefault = Ninq.firstOrDefault(seq, undefined);
+			expect(resWDefault).toBe(1);
+			expect(resWODefault).toBe(1);
+		});
+		it('Return the first of a seq with predicate', () => {
+			const seq = [1, 2],
+				resWODefault = Ninq.first(seq, x => 0 === x % 2),
+				resWDefault = Ninq.firstOrDefault(seq, undefined, x => 0 === x % 2);
+			expect(resWDefault).toBe(2);
+			expect(resWODefault).toBe(2);
+		});
+		it('Return the default if it is empty iterable', () => {
+			const seq = [] as number[],
+				resWDefault = Ninq.firstOrDefault(seq, undefined);
+			expect(resWDefault).toBe(undefined);
+			expect(() => Ninq.first(seq)).toThrow();
+		});
+
+	});
+
+
 });

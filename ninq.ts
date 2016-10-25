@@ -2,6 +2,7 @@ import ConcatIterable from './operators/concat';
 import { Selector, Predicate, EqualityComparer, ReductionFunc } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
+import FilterIterable from './operators/filter';
 
 export class Ninq<T> implements Iterable<T> {
 	constructor(private readonly iterable: Iterable<T>) {
@@ -381,6 +382,95 @@ export class Ninq<T> implements Iterable<T> {
 	except(other: Iterable<T>, comparer?: EqualityComparer<T>) {
 		return new Ninq(Ninq.except(this, other, comparer));
 	}
+
+	/**
+	 * Returns the first element of a sequence, or a default value if the sequence contains no elements.
+	 *
+	 * @static
+	 * @template T - Itrable's elements' type
+	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {T} defValue
+	 * @param {Predicate<T>} [predicate] - A function to test each element for a condition
+	 * @returns defValue if source is empty; otherwise, the first element in source
+	 *
+	 * @memberOf Ninq
+	 */
+	static firstOrDefault<T>(it: Iterable<T>, defValue: T, predicate?: Predicate<T>): T {
+		if (typeof predicate === 'function') {
+			return Ninq.firstOrDefault(Ninq.filter(it, predicate), defValue);
+		}
+		return Ninq.elementAtOrDefault(it, 0, defValue);
+	}
+	/**
+	 * Returns the first element in a sequence that satisfies a specified condition
+	 *
+	 * @static
+	 * @template T - Itrable's elements' type
+	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {Predicate<T>} [predicate] - A function to test each element for a condition
+	 * @returns The first element in the sequence that passes the test in the specified predicate function
+	 *
+	 * @memberOf Ninq
+	 */
+	static first<T>(it: Iterable<T>, predicate?: Predicate<T>) {
+		const result = Ninq.firstOrDefault<T | '\0__ERR__\0'>(it, '\0__ERR__\0', predicate);
+		if (result === '\0__ERR__\0') {
+			throw new RangeError('Iterable is emprty');
+		}
+		return result;
+	}
+	/**
+	 * Returns the first element of a sequence, or a default value if the sequence contains no elements.
+	 *
+	 * @param {T} defValue
+	 * @param {Predicate<T>} [predicate] - A function to test each element for a condition
+	 * @returns defValue if source is empty; otherwise, the first element in source
+	 *
+	 * @memberOf Ninq
+	 */
+	firstOrDefault(defValue: T, predicate?: Predicate<T>) {
+		return Ninq.firstOrDefault(this, defValue, predicate);
+	}
+	/**
+	 * Returns the first element in a sequence that satisfies a specified condition
+	 *
+	 * @param {Predicate<T>} [predicate] - A function to test each element for a condition
+	 * @returns The first element in the sequence that passes the test in the specified predicate function
+	 *
+	 * @memberOf Ninq
+	 */
+	first(predicate?: Predicate<T>) {
+		return Ninq.first(this, predicate);
+	}
+
+	/**
+	 * Filters a sequence of values based on a predicate
+	 *
+	 * @static
+	 * @template T
+	 * @param {Iterable<T>} it - An Iterable<T> to filter
+	 * @param {Predicate<T>} predicate - A function to test each element for a condition.
+	 * @returns {Iterable<T>} - An Iterable<T> that contains elements from the input sequence that satisfy the condition
+	 *
+	 * @memberOf Ninq
+	 */
+	static filter<T>(it: Iterable<T>, predicate: Predicate<T>)
+		: Iterable<T> {
+
+		return new FilterIterable(it, predicate);
+	}
+	/**
+	 * Filters the sequence of values based on a predicate
+	 *
+	 * @param {Predicate<T>} predicate - A function to test each element for a condition.
+	 * @returns - - A Ninq<T> that contains elements from the input sequence that satisfy the condition
+	 *
+	 * @memberOf Ninq
+	 */
+	filter(predicate: Predicate<T>) {
+		return new Ninq(Ninq.filter(this, predicate));
+	}
+
 
 	/**
 	 * Determines whether all elements of a sequence satisfy a condition
