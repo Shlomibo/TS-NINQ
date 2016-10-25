@@ -3,6 +3,8 @@ import { Selector, Predicate, EqualityComparer, ReductionFunc } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
+import { Grouping } from './operators/group-by';
+import GroupingIterable from './operators/group-by';
 
 export class Ninq<T> implements Iterable<T> {
 	constructor(private readonly iterable: Iterable<T>) {
@@ -510,6 +512,125 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	every(predicate: Predicate<T>) {
 		return Ninq.every(this, predicate);
+	}
+
+	/**
+	 * Groups the elements of a sequence according to a key selector function.
+	 * 	The keys are compared by using a comparer and each group's elements are projected by using a specified function
+	 *
+	 * @static
+	 * @template T - The type of the elements of the iterable
+	 * @template TKey - The type of the key returned by keySelector
+	 * @param {Iterable<T>} it - An Iterable<T> whose elements to group
+	 * @param {Selector<T, TKey>} keySelector - A function to extract the key for each element
+	 * @param {EqualityComparer<TKey>} [comparer] - A comparer to compare keys
+	 * @returns {Iterable<Grouping<T, TKey>>} - An Iterable<Grouping<T, TKey>> where each Grouping<T, TKey>
+	 * 	object contains a collection of objects of type T and a key
+	 *
+	 * @memberOf Ninq
+	 */
+	static groupBy<T, TKey>(
+		it: Iterable<T>,
+		keySelector: Selector<T, TKey>,
+		comparer?: EqualityComparer<TKey>
+	): Iterable<Grouping<T, TKey>>;
+	/**
+	 * Groups the elements of a sequence according to a key selector function.
+	 * 	The keys are compared by using a comparer and each group's elements are projected by using a specified function
+	 *
+	 * @static
+	 * @template T - The type of the elements of the iterable
+	 * @template TKey - The type of the key returned by keySelector
+	 * @template TResult - The type of the elements in the result
+	 * @param {Iterable<T>} it - An Iterable<T> whose elements to group
+	 * @param {Selector<T, TKey>} keySelector - A function to extract the key for each element
+	 * @param {Selector<T, TResult>} elementSelector - A function to map each source element to an element in the result
+	 * @param {EqualityComparer<TKey>} [comparer] - A comparer to compare keys
+	 * @returns {Iterable<Grouping<TResult, TKey>>} - An Iterable<Grouping<TResult, TKey>> where each Grouping<TResult, TKey>
+	 * 	object contains a collection of objects of type TResult and a key
+	 *
+	 * @memberOf Ninq
+	 */
+	static groupBy<T, TKey, TResult>(
+		it: Iterable<T>,
+		keySelector: Selector<T, TKey>,
+		elementSelector: Selector<T, TResult>,
+		comparer?: EqualityComparer<TKey>
+	): Iterable<Grouping<TResult, TKey>>;
+	static groupBy<T, TKey, TResult>(
+		it: Iterable<T>,
+		keySelector: Selector<T, TKey>,
+		selectorOrComparer: Selector<T, TResult> | EqualityComparer<TKey> | undefined,
+		comparer?: EqualityComparer<TKey>
+	) {
+		if (!comparer && (selectorOrComparer && selectorOrComparer.length === 2)) {
+			comparer = selectorOrComparer as EqualityComparer<TKey>;
+			selectorOrComparer = undefined;
+		}
+		if (!selectorOrComparer) {
+			selectorOrComparer = (x => x as any) as Selector<T, TResult>;
+		}
+		return new GroupingIterable<T, TKey, TResult>(
+			it,
+			keySelector,
+			selectorOrComparer as Selector<T, TResult>,
+			comparer
+		);
+	}
+	/**
+	 * Groups the elements of a sequence according to a key selector function.
+	 * 	The keys are compared by using a comparer and each group's elements are projected by using a specified function
+	 *
+	 * @template TKey - The type of the key returned by keySelector
+	 * @param {Selector<T, TKey>} keySelector - A function to extract the key for each element
+	 * @param {EqualityComparer<TKey>} [comparer] - A comparer to compare keys
+	 * @returns {Iterable<Grouping<T, TKey>>} - An Iterable<Grouping<T, TKey>> where each Grouping<T, TKey>
+	 * 	object contains a collection of objects of type T and a key
+	 *
+	 * @memberOf Ninq
+	 */
+	groupBy<TKey>(keySelector: Selector<T, TKey>, comparer?: EqualityComparer<TKey>): Ninq<Grouping<T, TKey>>;
+	/**
+	 * Groups the elements of a sequence according to a key selector function.
+	 * 	The keys are compared by using a comparer and each group's elements are projected by using a specified function
+	 *
+	 * @template TKey - The type of the key returned by keySelector
+	 * @template TResult - The type of the elements in the result
+	 * @param {Selector<T, TKey>} keySelector - A function to extract the key for each element
+	 * @param {Selector<T, TResult>} elementSelector - A function to map each source element to an element in the result
+	 * @param {EqualityComparer<TKey>} [comparer] - A comparer to compare keys
+	 * @returns {Iterable<Grouping<TResult, TKey>>} - An Iterable<Grouping<TResult, TKey>> where each Grouping<TResult, TKey>
+	 * 	object contains a collection of objects of type TResult and a key
+	 *
+	 * @memberOf Ninq
+	 */
+	groupBy<TKey, TResult>(
+		keySelector: Selector<T, TKey>,
+		elementSelector: Selector<T, TResult>,
+		comparer?: EqualityComparer<TKey>
+	): Ninq<Grouping<T, TKey>>;
+	groupBy<TKey, TResult>(
+		keySelector: Selector<T, TKey>,
+		selectorOrComparer: Selector<T, TResult> | EqualityComparer<TKey> | undefined,
+		comparer?: EqualityComparer<TKey>
+	) {
+		if (!comparer && (selectorOrComparer && selectorOrComparer.length === 2)) {
+			comparer = selectorOrComparer as EqualityComparer<TKey>;
+			selectorOrComparer = undefined;
+		}
+		const resultIterable = selectorOrComparer
+			? Ninq.groupBy(
+				this,
+				keySelector,
+				selectorOrComparer as Selector<T, TResult>,
+				comparer
+			)
+			: Ninq.groupBy(
+				this,
+				keySelector,
+				comparer
+			);
+		return new Ninq<Grouping<TResult, TKey>>(resultIterable as any);
 	}
 
 	/**
