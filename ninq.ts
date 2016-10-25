@@ -3,6 +3,7 @@ import ConcatIterable from './operators/concat';
 export type ReductionFunc<T, U> = (aggregate: U | undefined, item: T, index: number) => U;
 export type Predicate<T> = (item: T, index: number) => boolean;
 export type Selector<T, U> = (item: T) => U;
+export type EqualityComparer<T> = (left: T, right: T) => boolean;
 
 export class Ninq<T> implements Iterable<T> {
 	constructor(private readonly iterable: Iterable<T>) {
@@ -143,6 +144,55 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
+	 * Returns the number of elements in a sequence
+	 *
+	 * @static
+	 * @template T - Itrable's elements' type
+	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @returns {number} - The number of elements in the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static count<T>(it: Iterable<T>): number;
+	/**
+	 * Returns a number that represents how many elements in the specified sequence satisfy a condition
+	 *
+	 * @static
+	 * @template T - Itrable's elements' type
+	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {Predicate<T>} predicate - A function to test each element for a condition
+	 * @returns {number} - A number that represents how many elements in the sequence satisfy the condition in the predicate function
+	 *
+	 * @memberOf Ninq
+	 */
+	static count<T>(it: Iterable<T>, predicate: Predicate<T>): number;
+	static count<T>(it: Iterable<T>, predicate?: Predicate<T>) {
+		let result = 0,
+			index = 0;
+		predicate = predicate || (x => true);
+		for (let item of it) {
+			if (predicate(item, index)) {
+				result++;
+			}
+			index++;
+		}
+		return result;
+	}
+	/**
+	 * Returns a number that represents how many elements in the specified sequence satisfy a condition
+	 *
+	 * @returns {number} - The number of elements in the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	count(): number;
+	count(predicate: Predicate<T>): number;
+	count(predicate?: Predicate<T>) {
+		return typeof predicate === 'function'
+			? Ninq.count(this, predicate)
+			: Ninq.count(this);
+	}
+	/**
 	 * Determines whether all elements of a sequence satisfy a condition
 	 *
 	 * @static
@@ -180,6 +230,31 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	every(predicate: Predicate<T>) {
 		return Ninq.every(this, predicate);
+	}
+
+	/**
+	 * Determines whether a sequence contains a specified element
+	 *
+	 * @static
+	 * @template T - Itrable's elements' type
+	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {T} item - The value to locate in the sequence
+	 * @param {EqualityComparer<T>} [comparer] - An optional equality comparer to compare values
+	 * @returns true if the source sequence contains an element that has the specified value; otherwise, false
+	 *
+	 * @memberOf Ninq
+	 */
+	static includes<T>(it: Iterable<T>, item: T, comparer?: EqualityComparer<T>) {
+		comparer = comparer || ((x, y) => x === y);
+		for (let element of it) {
+			if (comparer(item, element)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	includes(item: T, comparer?: EqualityComparer<T>) {
+		return Ninq.includes(this, item, comparer);
 	}
 
 	/**

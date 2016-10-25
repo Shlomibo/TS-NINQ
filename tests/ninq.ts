@@ -1,4 +1,5 @@
 import * as n from '../ninq';
+import { Ninq } from '../ninq';
 
 function* randomSeq(length = 10, max = 100) {
 	for (let i = 0; i < length; i++) {
@@ -102,6 +103,43 @@ describe('Test Base ninq class', () => {
 				avg = sum / arr.length,
 				seq = new n.Ninq(arr);
 			expect(seq.average(x => x)).toBeCloseTo(avg, 10);
+		});
+
+	});
+
+
+	describe('Icludes', () => {
+		function comparer(left: string, right: string) {
+			return left.length === right.length;
+		}
+		it('return true if the item is included', () => {
+			const seq = new Ninq([1, 2, 3]);
+			expect(seq.includes(2)).toBe(true);
+		});
+		it('return false if the item is not included', () => {
+			const seq = new Ninq([1, 2, 3]);
+			expect(seq.includes(5)).toBe(false);
+		});
+		it('return true if the item is included, using comparer', () => {
+			const seq = new Ninq(['a', 'aa', 'aaa']);
+			expect(seq.includes('bb', comparer)).toBe(true);
+		});
+		it('return false if the item is not included, using comparer', () => {
+			const seq = new Ninq(['a', 'aa', 'aaa']);
+			expect(seq.includes('bbbbb', comparer)).toBe(false);
+		});
+	});
+
+
+	describe('Count', () => {
+
+		it('Should return full count', () => {
+			const seq = new Ninq([1, 2, 3]);
+			expect(seq.count()).toBe(3);
+		});
+		it('Should return predicate count', () => {
+			const seq = new Ninq([1, 2, 3, 4]);
+			expect(seq.count(x => 0 === x % 2)).toBe(2);
 		});
 
 	});
