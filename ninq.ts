@@ -7,6 +7,7 @@ import { Grouping } from './operators/group-by';
 import GroupingIterable from './operators/group-by';
 import { GroupJoinEntry } from './operators/group-join';
 import GroupJoinIterable from './operators/group-join';
+import IntersectionIterator from './operators/intersect';
 
 export class Ninq<T> implements Iterable<T> {
 	constructor(private readonly iterable: Iterable<T>) {
@@ -55,7 +56,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	average(selector: Selector<T, number>) {
-		return Ninq.average(this, selector);
+		return Ninq.average(this.iterable, selector);
 	}
 
 	/**
@@ -200,7 +201,7 @@ export class Ninq<T> implements Iterable<T> {
 	count(predicate: Predicate<T>): number;
 	count(predicate?: Predicate<T>) {
 		return typeof predicate === 'function'
-			? Ninq.count(this, predicate)
+			? Ninq.count(this.iterable, predicate)
 			: Ninq.count(this);
 	}
 
@@ -231,7 +232,7 @@ export class Ninq<T> implements Iterable<T> {
 	defaultIfEmpty(defValue: T) {
 		return this.some()
 			? this
-			: new Ninq(Ninq.defaultIfEmpty(this, defValue));
+			: new Ninq(Ninq.defaultIfEmpty(this.iterable, defValue));
 	}
 
 	/**
@@ -272,7 +273,7 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	distinct(comparer?: EqualityComparer<T>) {
 		const iterable = typeof comparer === 'function'
-			? Ninq.distinct(this, comparer)
+			? Ninq.distinct(this.iterable, comparer)
 			: Ninq.distinct(this);
 		return new Ninq(iterable);
 	}
@@ -329,7 +330,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	elementAtOrDefault(index: number, defValue: T) {
-		return Ninq.elementAtOrDefault<T>(this, index, defValue);
+		return Ninq.elementAtOrDefault<T>(this.iterable, index, defValue);
 	}
 	/**
 	 * Returns the element at a specified index in a sequence
@@ -340,7 +341,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	elementAt(index: number) {
-		return Ninq.elementAt<T>(this, index);
+		return Ninq.elementAt<T>(this.iterable, index);
 	}
 
 	/**
@@ -384,7 +385,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	except(other: Iterable<T>, comparer?: EqualityComparer<T>) {
-		return new Ninq(Ninq.except(this, other, comparer));
+		return new Ninq(Ninq.except(this.iterable, other, comparer));
 	}
 
 	/**
@@ -433,7 +434,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	firstOrDefault(defValue: T, predicate?: Predicate<T>) {
-		return Ninq.firstOrDefault(this, defValue, predicate);
+		return Ninq.firstOrDefault(this.iterable, defValue, predicate);
 	}
 	/**
 	 * Returns the first element in a sequence that satisfies a specified condition
@@ -444,7 +445,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	first(predicate?: Predicate<T>) {
-		return Ninq.first(this, predicate);
+		return Ninq.first(this.iterable, predicate);
 	}
 
 	/**
@@ -472,7 +473,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	filter(predicate: Predicate<T>) {
-		return new Ninq(Ninq.filter(this, predicate));
+		return new Ninq(Ninq.filter(this.iterable, predicate));
 	}
 
 
@@ -513,7 +514,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	every(predicate: Predicate<T>) {
-		return Ninq.every(this, predicate);
+		return Ninq.every(this.iterable, predicate);
 	}
 
 	/**
@@ -622,13 +623,13 @@ export class Ninq<T> implements Iterable<T> {
 		}
 		const resultIterable = selectorOrComparer
 			? Ninq.groupBy(
-				this,
+				this.iterable,
 				keySelector,
 				selectorOrComparer as Selector<T, TResult>,
 				comparer
 			)
 			: Ninq.groupBy(
-				this,
+				this.iterable,
 				keySelector,
 				comparer
 			);
@@ -774,7 +775,7 @@ export class Ninq<T> implements Iterable<T> {
 		let resultIterable: Iterable<TResult>;
 		if (!resultSelecorOrComparer || resultSelecorOrComparer.length === 2) {
 			resultIterable = Ninq.groupJoin(
-				this,
+				this.iterable,
 				inner,
 				keySelector,
 				innerKeySelector,
@@ -783,7 +784,7 @@ export class Ninq<T> implements Iterable<T> {
 		}
 		else {
 			resultIterable = Ninq.groupJoin(
-				this,
+				this.iterable,
 				inner,
 				keySelector,
 				innerKeySelector,
@@ -816,7 +817,63 @@ export class Ninq<T> implements Iterable<T> {
 		return false;
 	}
 	includes(item: T, comparer?: EqualityComparer<T>) {
-		return Ninq.includes(this, item, comparer);
+		return Ninq.includes(this.iterable, item, comparer);
+	}
+
+	/**
+	 * Produces the set intersection of two sequences.
+	 *
+	 * @static
+	 * @template T - The type of the elements of the input sequences
+	 * @param {Iterable<T>} left - An Iterable<T> whose distinct elements that also appear in right will be returned
+	 * @param {Iterable<T>} right - An Iterable<T> whose distinct elements that also appear in the left sequence will be returned
+	 * @returns - A sequence that contains the elements that form the set intersection of two sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	static intersect<T>(left: Iterable<T>, right: Iterable<T>): Set<T>;
+	/**
+	 * Produces the set intersection of two sequences.
+	 *
+	 * @static
+	 * @template T - The type of the elements of the input sequences
+	 * @param {Iterable<T>} left - An Iterable<T> whose distinct elements that also appear in right will be returned
+	 * @param {Iterable<T>} right - An Iterable<T> whose distinct elements that also appear in the left sequence will be returned
+	 * @param {EqualityComparer<T>} comparer - A comparer to compare values
+	 * @returns - A sequence that contains the elements that form the set intersection of two sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	static intersect<T>(left: Iterable<T>, right: Iterable<T>, comparer: EqualityComparer<T>): Iterable<T>;
+	static intersect<T>(left: Iterable<T>, right: Iterable<T>, comparer?: EqualityComparer<T>): Iterable<T> {
+		if (comparer) {
+			return new IntersectionIterator(left, right, comparer);
+		}
+		const leftSet = left instanceof Set
+			? left as Set<T>
+			: new Set(left);
+		const result = new Set<T>();
+		for (let item of right) {
+			if (leftSet.has(item)) {
+				result.add(item);
+			}
+		}
+		return result;
+	}
+	/**
+	 * Produces the set intersection of two sequences.
+	 *
+	 * @param {Iterable<T>} other - An Iterable<T> whose distinct elements that also appear in the left sequence will be returned
+	 * @param {EqualityComparer<T>} [comparer] - An optional comparer to compare values
+	 * @returns - A sequence that contains the elements that form the set intersection of two sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	intersect(other: Iterable<T>, comparer?: EqualityComparer<T>) {
+		const resultIterable = comparer
+			? Ninq.intersect(this.iterable, other, comparer)
+			: Ninq.intersect(this.iterable, other);
+		return new Ninq(resultIterable);
 	}
 
 	/**
@@ -900,12 +957,12 @@ export class Ninq<T> implements Iterable<T> {
 	): TResult | undefined {
 		return typeof reduc === 'function'
 			? Ninq.reduce(
-				this,
+				this.iterable,
 				seedOrReduc as TResult,
 				reduc
 			)
 			: Ninq.reduce(
-				this,
+				this.iterable,
 				seedOrReduc as ReductionFunc<T, TResult>
 			);
 	}
@@ -961,7 +1018,7 @@ export class Ninq<T> implements Iterable<T> {
 	some(prediacte: Predicate<T>): boolean;
 	some(prediacte?: Predicate<T>) {
 		return typeof prediacte === 'function'
-			? Ninq.some(this, prediacte)
+			? Ninq.some(this.iterable, prediacte)
 			: Ninq.some(this);
 	}
 }
