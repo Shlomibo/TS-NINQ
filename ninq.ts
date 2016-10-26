@@ -5,6 +5,8 @@ import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
 import { Grouping } from './operators/group-by';
 import GroupingIterable from './operators/group-by';
+import { GroupJoinEntry } from './operators/group-join';
+import GroupJoinIterable from './operators/group-join';
 
 export class Ninq<T> implements Iterable<T> {
 	constructor(private readonly iterable: Iterable<T>) {
@@ -631,6 +633,165 @@ export class Ninq<T> implements Iterable<T> {
 				comparer
 			);
 		return new Ninq<Grouping<TResult, TKey>>(resultIterable as any);
+	}
+
+	/**
+	 * Correlates the elements of two sequences based on key equality and groups the results.
+	 * 	A specified comparer is used to compare keys
+	 *
+	 * @static
+	 * @template TOuner
+	 * @template TInner
+	 * @template TKey
+	 * @param {Iterable<TOuner>} outer - The first sequence to join
+	 * @param {Iterable<TInner>} inner - The sequence to join to the first sequence
+	 * @param {Selector<TOuner, TKey>} outerSelector - A function to extract the join key from each element of the first sequence
+	 * @param {Selector<TInner, TKey>} innerSelector - A function to extract the join key from each element of the second sequence
+	 * @param {EqualityComparer<TKey>} [comparer] - A comparer to compare keys
+	 * @returns {Iterable<GroupJoinEntry<TOuner, TInner>>} - An Iterable<T> that contains elements of the result
+	 * 	that are obtained by performing a grouped join on two sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	static groupJoin<TOuner, TInner, TKey>(
+		outer: Iterable<TOuner>,
+		inner: Iterable<TInner>,
+		outerSelector: Selector<TOuner, TKey>,
+		innerSelector: Selector<TInner, TKey>,
+		comparer?: EqualityComparer<TKey>
+	): Iterable<GroupJoinEntry<TOuner, TInner>>;
+	/**
+	 * Correlates the elements of two sequences based on key equality and groups the results.
+	 * 	A specified comparer is used to compare keys
+	 *
+	 * @static
+	 * @template TOuner
+	 * @template TInner
+	 * @template TKey
+	 * @template TResult
+	 * @param {Iterable<TOuner>} outer - The first sequence to join
+	 * @param {Iterable<TInner>} inner - The sequence to join to the first sequence
+	 * @param {Selector<TOuner, TKey>} outerSelector - A function to extract the join key from each element of the first sequence
+	 * @param {Selector<TInner, TKey>} innerSelector - A function to extract the join key from each element of the second sequence
+	 * @param {Selector<GroupJoinEntry<TOuner, TInner>, TResult>} resultSelector - A function to create a result element from an element from the first sequence
+	 * 	and a collection of matching elements from the second sequence
+	 * @param {EqualityComparer<TKey>} [comparer] - A comparer to compare keys
+	 * @returns {Iterable<TResult>} - An Iterable<T> that contains elements of the result
+	 * 	that are obtained by performing a grouped join on two sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	static groupJoin<TOuner, TInner, TKey, TResult>(
+		outer: Iterable<TOuner>,
+		inner: Iterable<TInner>,
+		outerSelector: Selector<TOuner, TKey>,
+		innerSelector: Selector<TInner, TKey>,
+		resultSelector: Selector<GroupJoinEntry<TOuner, TInner>, TResult>,
+		comparer?: EqualityComparer<TKey>
+	): Iterable<TResult>;
+	static groupJoin<TOuner, TInner, TKey, TResult>(
+		outer: Iterable<TOuner>,
+		inner: Iterable<TInner>,
+		outerSelector: Selector<TOuner, TKey>,
+		innerSelector: Selector<TInner, TKey>,
+		resultSelectorOrComparer?: Selector<GroupJoinEntry<TOuner, TInner>, TResult> | EqualityComparer<TKey>,
+		comparer?: EqualityComparer<TKey>
+	) {
+		if (!resultSelectorOrComparer || resultSelectorOrComparer.length === 2) {
+			return new GroupJoinIterable(
+				outer,
+				inner,
+				outerSelector,
+				innerSelector,
+				entry => entry,
+				resultSelectorOrComparer as (EqualityComparer<TKey> | undefined)
+			) as any as Iterable<TResult>;
+		}
+		else {
+			return new GroupJoinIterable(
+				outer,
+				inner,
+				outerSelector,
+				innerSelector,
+				resultSelectorOrComparer as Selector<GroupJoinEntry<TOuner, TInner>, TResult>,
+				comparer
+			);
+		}
+	}
+	/**
+	 * Correlates the elements of two sequences based on key equality and groups the results.
+	 * 	A specified comparer is used to compare keys
+	 *
+	 * @template TInner
+	 * @template TKey
+	 * @param {Iterable<TInner>} inner - The sequence to join to this sequence
+	 * @param {Selector<T, TKey>} keySelector - - A function to extract the join key from each element of this sequence
+	 * @param {Selector<TInner, TKey>} innerKeySelector - A function to extract the join key from each element of the inner sequence
+	 * @param {EqualityComparer<TKey>} [comparer] - A comparer to compare keys
+	 * @returns {Ninq<GroupJoinEntry<T, TInner>>} - A Ninq<GroupJoinEntry<T, TInner>> that contains elements of the result
+	 * 	that are obtained by performing a grouped join on two sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	groupJoin<TInner, TKey>(
+		inner: Iterable<TInner>,
+		keySelector: Selector<T, TKey>,
+		innerKeySelector: Selector<TInner, TKey>,
+		comparer?: EqualityComparer<TKey>
+	): Ninq<GroupJoinEntry<T, TInner>>;
+	/**
+	 * Correlates the elements of two sequences based on key equality and groups the results.
+	 * 	A specified comparer is used to compare keys
+	 *
+	 * @template TInner
+	 * @template TKey
+	 * @template TResult
+	 * @param {Iterable<TInner>} inner - The sequence to join to this sequence
+	 * @param {Selector<T, TKey>} keySelector - - A function to extract the join key from each element of this sequence
+	 * @param {Selector<TInner, TKey>} innerKeySelector - A function to extract the join key from each element of the inner sequence
+	 * @param {Selector<GroupJoinEntry<TOuner, TInner>, TResult>} resultSelector - A function to create a result element from an element from the first sequence
+	 * 	and a collection of matching elements from the second sequence
+	 * @param {EqualityComparer<TKey>} [comparer] - A comparer to compare keys
+	 * @returns {Ninq<TResult>} - A Ninq<TResult> that contains elements of the result
+	 * 	that are obtained by performing a grouped join on two sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	groupJoin<TInner, TKey, TResult>(
+		inner: Iterable<TInner>,
+		keySelector: Selector<T, TKey>,
+		innerKeySelector: Selector<TInner, TKey>,
+		resultSelecor: Selector<GroupJoinEntry<T, TInner>, TResult>,
+		comparer?: EqualityComparer<TKey>
+	): Ninq<TResult>;
+	groupJoin<TInner, TKey, TResult>(
+		inner: Iterable<TInner>,
+		keySelector: Selector<T, TKey>,
+		innerKeySelector: Selector<TInner, TKey>,
+		resultSelecorOrComparer?: Selector<GroupJoinEntry<T, TInner>, TResult> | EqualityComparer<TKey>,
+		comparer?: EqualityComparer<TKey>
+	) {
+		let resultIterable: Iterable<TResult>;
+		if (!resultSelecorOrComparer || resultSelecorOrComparer.length === 2) {
+			resultIterable = Ninq.groupJoin(
+				this,
+				inner,
+				keySelector,
+				innerKeySelector,
+				resultSelecorOrComparer as (EqualityComparer<TKey> | undefined)
+			) as any as Iterable<TResult>;
+		}
+		else {
+			resultIterable = Ninq.groupJoin(
+				this,
+				inner,
+				keySelector,
+				innerKeySelector,
+				resultSelecorOrComparer as Selector<GroupJoinEntry<T, TInner>, TResult>,
+				comparer
+			);
+		}
+		return new Ninq(resultIterable);
 	}
 
 	/**

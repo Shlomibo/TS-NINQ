@@ -65,6 +65,7 @@
             "check-operator",
             "check-separator",
             "check-type"
-        ]
+        ],
+        "no-use-before-declare": true
     }
 }
