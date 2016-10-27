@@ -1,4 +1,4 @@
-import { Selector, EqualityComparer } from '../types';
+import { Mapping, EqualityComparer } from '../types';
 export interface GroupJoinEntry<TOuter, TInner> {
 	outer: TOuter;
 	inner: Iterable<TInner>;
@@ -12,9 +12,9 @@ export default class GroupJoinIterable<TOuter, TInner, TKey, TResult> implements
 	constructor(
 		private readonly outer: Iterable<TOuter>,
 		private readonly inner: Iterable<TInner>,
-		private readonly outerSelector: Selector<TOuter, TKey>,
-		private readonly innerSelector: Selector<TInner, TKey>,
-		private readonly resultSelector: Selector<GroupJoinEntry<TOuter, TInner>, TResult>,
+		private readonly outerSelector: Mapping<TOuter, TKey>,
+		private readonly innerSelector: Mapping<TInner, TKey>,
+		private readonly resultSelector: Mapping<GroupJoinEntry<TOuter, TInner>, TResult>,
 		private readonly comparer?: EqualityComparer<TKey>
 	) {
 	}

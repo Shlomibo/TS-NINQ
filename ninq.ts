@@ -1,5 +1,5 @@
 import ConcatIterable from './operators/concat';
-import { Selector, Predicate, EqualityComparer, ReductionFunc } from './types';
+import { Mapping, Predicate, EqualityComparer, ReductionFunc } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
@@ -8,6 +8,8 @@ import GroupingIterable from './operators/group-by';
 import { GroupJoinEntry } from './operators/group-join';
 import GroupJoinIterable from './operators/group-join';
 import IntersectionIterator from './operators/intersect';
+import { JoinMatch } from './operators/join';
+import JoinIterable from './operators/join';
 
 export class Ninq<T> implements Iterable<T> {
 	constructor(private readonly iterable: Iterable<T>) {
@@ -31,7 +33,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static average<T>(it: Iterable<T>, selector: Selector<T, number>) {
+	static average<T>(it: Iterable<T>, selector: Mapping<T, number>) {
 		return Ninq.reduce<T, number>(
 			it,
 			(prev, item, index) => {
@@ -55,7 +57,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	average(selector: Selector<T, number>) {
+	average(selector: Mapping<T, number>) {
 		return Ninq.average(this.iterable, selector);
 	}
 
@@ -534,7 +536,7 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	static groupBy<T, TKey>(
 		it: Iterable<T>,
-		keySelector: Selector<T, TKey>,
+		keySelector: Mapping<T, TKey>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<Grouping<T, TKey>>;
 	/**
@@ -556,14 +558,14 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	static groupBy<T, TKey, TResult>(
 		it: Iterable<T>,
-		keySelector: Selector<T, TKey>,
-		elementSelector: Selector<T, TResult>,
+		keySelector: Mapping<T, TKey>,
+		elementSelector: Mapping<T, TResult>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<Grouping<TResult, TKey>>;
 	static groupBy<T, TKey, TResult>(
 		it: Iterable<T>,
-		keySelector: Selector<T, TKey>,
-		selectorOrComparer: Selector<T, TResult> | EqualityComparer<TKey> | undefined,
+		keySelector: Mapping<T, TKey>,
+		selectorOrComparer: Mapping<T, TResult> | EqualityComparer<TKey> | undefined,
 		comparer?: EqualityComparer<TKey>
 	) {
 		if (!comparer && (selectorOrComparer && selectorOrComparer.length === 2)) {
@@ -571,12 +573,12 @@ export class Ninq<T> implements Iterable<T> {
 			selectorOrComparer = undefined;
 		}
 		if (!selectorOrComparer) {
-			selectorOrComparer = (x => x as any) as Selector<T, TResult>;
+			selectorOrComparer = (x => x as any) as Mapping<T, TResult>;
 		}
 		return new GroupingIterable<T, TKey, TResult>(
 			it,
 			keySelector,
-			selectorOrComparer as Selector<T, TResult>,
+			selectorOrComparer as Mapping<T, TResult>,
 			comparer
 		);
 	}
@@ -592,7 +594,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	groupBy<TKey>(keySelector: Selector<T, TKey>, comparer?: EqualityComparer<TKey>): Ninq<Grouping<T, TKey>>;
+	groupBy<TKey>(keySelector: Mapping<T, TKey>, comparer?: EqualityComparer<TKey>): Ninq<Grouping<T, TKey>>;
 	/**
 	 * Groups the elements of a sequence according to a key selector function.
 	 * 	The keys are compared by using a comparer and each group's elements are projected by using a specified function
@@ -608,13 +610,13 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	groupBy<TKey, TResult>(
-		keySelector: Selector<T, TKey>,
-		elementSelector: Selector<T, TResult>,
+		keySelector: Mapping<T, TKey>,
+		elementSelector: Mapping<T, TResult>,
 		comparer?: EqualityComparer<TKey>
 	): Ninq<Grouping<T, TKey>>;
 	groupBy<TKey, TResult>(
-		keySelector: Selector<T, TKey>,
-		selectorOrComparer: Selector<T, TResult> | EqualityComparer<TKey> | undefined,
+		keySelector: Mapping<T, TKey>,
+		selectorOrComparer: Mapping<T, TResult> | EqualityComparer<TKey> | undefined,
 		comparer?: EqualityComparer<TKey>
 	) {
 		if (!comparer && (selectorOrComparer && selectorOrComparer.length === 2)) {
@@ -625,7 +627,7 @@ export class Ninq<T> implements Iterable<T> {
 			? Ninq.groupBy(
 				this.iterable,
 				keySelector,
-				selectorOrComparer as Selector<T, TResult>,
+				selectorOrComparer as Mapping<T, TResult>,
 				comparer
 			)
 			: Ninq.groupBy(
@@ -657,8 +659,8 @@ export class Ninq<T> implements Iterable<T> {
 	static groupJoin<TOuner, TInner, TKey>(
 		outer: Iterable<TOuner>,
 		inner: Iterable<TInner>,
-		outerSelector: Selector<TOuner, TKey>,
-		innerSelector: Selector<TInner, TKey>,
+		outerSelector: Mapping<TOuner, TKey>,
+		innerSelector: Mapping<TInner, TKey>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<GroupJoinEntry<TOuner, TInner>>;
 	/**
@@ -685,17 +687,17 @@ export class Ninq<T> implements Iterable<T> {
 	static groupJoin<TOuner, TInner, TKey, TResult>(
 		outer: Iterable<TOuner>,
 		inner: Iterable<TInner>,
-		outerSelector: Selector<TOuner, TKey>,
-		innerSelector: Selector<TInner, TKey>,
-		resultSelector: Selector<GroupJoinEntry<TOuner, TInner>, TResult>,
+		outerSelector: Mapping<TOuner, TKey>,
+		innerSelector: Mapping<TInner, TKey>,
+		resultSelector: Mapping<GroupJoinEntry<TOuner, TInner>, TResult>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<TResult>;
 	static groupJoin<TOuner, TInner, TKey, TResult>(
 		outer: Iterable<TOuner>,
 		inner: Iterable<TInner>,
-		outerSelector: Selector<TOuner, TKey>,
-		innerSelector: Selector<TInner, TKey>,
-		resultSelectorOrComparer?: Selector<GroupJoinEntry<TOuner, TInner>, TResult> | EqualityComparer<TKey>,
+		outerSelector: Mapping<TOuner, TKey>,
+		innerSelector: Mapping<TInner, TKey>,
+		resultSelectorOrComparer?: Mapping<GroupJoinEntry<TOuner, TInner>, TResult> | EqualityComparer<TKey>,
 		comparer?: EqualityComparer<TKey>
 	) {
 		if (!resultSelectorOrComparer || resultSelectorOrComparer.length === 2) {
@@ -714,7 +716,7 @@ export class Ninq<T> implements Iterable<T> {
 				inner,
 				outerSelector,
 				innerSelector,
-				resultSelectorOrComparer as Selector<GroupJoinEntry<TOuner, TInner>, TResult>,
+				resultSelectorOrComparer as Mapping<GroupJoinEntry<TOuner, TInner>, TResult>,
 				comparer
 			);
 		}
@@ -736,8 +738,8 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	groupJoin<TInner, TKey>(
 		inner: Iterable<TInner>,
-		keySelector: Selector<T, TKey>,
-		innerKeySelector: Selector<TInner, TKey>,
+		keySelector: Mapping<T, TKey>,
+		innerKeySelector: Mapping<TInner, TKey>,
 		comparer?: EqualityComparer<TKey>
 	): Ninq<GroupJoinEntry<T, TInner>>;
 	/**
@@ -760,16 +762,16 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	groupJoin<TInner, TKey, TResult>(
 		inner: Iterable<TInner>,
-		keySelector: Selector<T, TKey>,
-		innerKeySelector: Selector<TInner, TKey>,
-		resultSelecor: Selector<GroupJoinEntry<T, TInner>, TResult>,
+		keySelector: Mapping<T, TKey>,
+		innerKeySelector: Mapping<TInner, TKey>,
+		resultSelecor: Mapping<GroupJoinEntry<T, TInner>, TResult>,
 		comparer?: EqualityComparer<TKey>
 	): Ninq<TResult>;
 	groupJoin<TInner, TKey, TResult>(
 		inner: Iterable<TInner>,
-		keySelector: Selector<T, TKey>,
-		innerKeySelector: Selector<TInner, TKey>,
-		resultSelecorOrComparer?: Selector<GroupJoinEntry<T, TInner>, TResult> | EqualityComparer<TKey>,
+		keySelector: Mapping<T, TKey>,
+		innerKeySelector: Mapping<TInner, TKey>,
+		resultSelecorOrComparer?: Mapping<GroupJoinEntry<T, TInner>, TResult> | EqualityComparer<TKey>,
 		comparer?: EqualityComparer<TKey>
 	) {
 		let resultIterable: Iterable<TResult>;
@@ -788,7 +790,7 @@ export class Ninq<T> implements Iterable<T> {
 				inner,
 				keySelector,
 				innerKeySelector,
-				resultSelecorOrComparer as Selector<GroupJoinEntry<T, TInner>, TResult>,
+				resultSelecorOrComparer as Mapping<GroupJoinEntry<T, TInner>, TResult>,
 				comparer
 			);
 		}
@@ -874,6 +876,68 @@ export class Ninq<T> implements Iterable<T> {
 			? Ninq.intersect(this.iterable, other, comparer)
 			: Ninq.intersect(this.iterable, other);
 		return new Ninq(resultIterable);
+	}
+
+	/**
+	 * Correlates the elements of two sequences based on matching keys
+	 *
+	 *
+	 * @static
+	 * @template TOuter - The type of the elements of the first sequence
+	 * @template TInner - The type of the elements of the second sequence
+	 * @template TKey - The type of the keys returned by the key selector functions
+	 * @param {Iterable<TOuter>} outer - The first sequence to join
+	 * @param {Iterable<TInner>} inner - The sequence to join to the first sequence
+	 * @param {Mapping<TOuter, TKey>} outerKeySelector - A function to extract the join key from each element of the first sequence
+	 * @param {Mapping<TInner, TKey>} innerKeySelector - A function to extract the join key from each element of the second sequence
+	 * @param {EqualityComparer<TKey>} [comparer] - An optional comparer ro compare keys
+	 * @returns An Iterable<Iterable<JoinMatch<TOuter, TInner>>> that has elements of type TResult
+	 * 	that are obtained by performing an inner join on two sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	static join<TOuter, TInner, TKey>(
+		outer: Iterable<TOuter>,
+		inner: Iterable<TInner>,
+		outerKeySelector: Mapping<TOuter, TKey>,
+		innerKeySelector: Mapping<TInner, TKey>,
+		comparer?: EqualityComparer<TKey>
+	): Iterable<JoinMatch<TOuter, TInner>> {
+		return new JoinIterable(
+			outer,
+			inner,
+			outerKeySelector,
+			innerKeySelector,
+			comparer
+		);
+	}
+	/**
+	 * Correlates the elements of two sequences based on matching keys
+	 *
+	 * @template TOther - The type of the elements of the second sequence
+	 * @template TKey - The type of the keys returned by the key selector functions
+	 * @param {Iterable<TOther>} other - The sequence to join to the first sequence
+	 * @param {Mapping<T, TKey>} keySelector - A function to extract the join key from each element of this sequence
+	 * @param {Mapping<TOther, TKey>} otherKeySelector - A function to extract the join key from each element of the other sequence
+	 * @param {EqualityComparer<TKey>} [comparer] - An optional comparer ro compare keys
+	 * @returns An Ninq<Iterable<JoinMatch<TOuter, TInner>>> that has elements of type TResult
+	 * 	that are obtained by performing an inner join on two sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	join<TOther, TKey>(
+		other: Iterable<TOther>,
+		keySelector: Mapping<T, TKey>,
+		otherKeySelector: Mapping<TOther, TKey>,
+		comparer?: EqualityComparer<TKey>
+	) {
+		return new Ninq(Ninq.join(
+			this.iterable,
+			other,
+			keySelector,
+			otherKeySelector,
+			comparer
+		));
 	}
 
 	/**

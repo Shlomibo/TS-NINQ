@@ -1,4 +1,4 @@
-import { Selector, EqualityComparer } from '../types';
+import { Mapping, EqualityComparer } from '../types';
 export interface Grouping<TKey, TElement> extends Iterable<TElement> {
 	readonly key: TKey;
 }
@@ -6,8 +6,8 @@ export interface Grouping<TKey, TElement> extends Iterable<TElement> {
 export default class GroupingIterable<TSource, TKey, TElement> implements Iterable<Grouping<TKey, TElement>> {
 	constructor(
 		private readonly iterable: Iterable<TSource>,
-		private readonly keySelector: Selector<TSource, TKey>,
-		private readonly elementSelector: Selector<TSource, TElement>,
+		private readonly keySelector: Mapping<TSource, TKey>,
+		private readonly elementSelector: Mapping<TSource, TElement>,
 		private readonly comparer?: EqualityComparer<TKey>
 	) {
 	}
