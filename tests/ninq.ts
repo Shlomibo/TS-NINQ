@@ -225,4 +225,74 @@ describe('Test Base ninq class', () => {
 	});
 
 
+	describe('Last', () => {
+		const arr = [1, 2, 3],
+			empty = [];
+
+		it('return the last element', () => {
+			expect(Ninq.last(arr)).toBe(3);
+			expect(Ninq.lastOrDefault(arr, NaN)).toBe(3);
+		});
+
+
+		it('return def value or throws for empty seq', () => {
+			expect(() => Ninq.last(empty)).toThrow();
+			expect(Ninq.lastOrDefault(empty, Infinity)).toBe(Infinity);
+		});
+
+		it('return the last element that pass predicate', () => {
+			expect(Ninq.last(arr, x => 0 === x % 2)).toBe(2);
+			expect(Ninq.lastOrDefault(arr, NaN, x => 0 === x % 2)).toBe(2);
+		});
+
+
+		it("return def value or throws for seqs that don't pass", () => {
+			expect(() => Ninq.last(arr, x => false)).toThrow();
+			expect(Ninq.lastOrDefault(arr, Infinity, x => false)).toBe(Infinity);
+		});
+
+	});
+
+
+	describe('Max', () => {
+
+		it('return max value', () => {
+			const num = [1, -2, 3],
+				str = ['a', 'ba', 'caa'];
+
+			expect(Ninq.max(num)).toBe(3);
+			expect(Ninq.max(str, s => s.length)).toBe(3);
+		});
+
+		it('return undefined', () => {
+			const num = [] as number[],
+				str = [] as string[];
+
+			expect(Ninq.max(num)).toBeUndefined();
+			expect(Ninq.max(str, s => s.length)).toBeUndefined();
+		});
+
+	});
+
+	describe('Min', () => {
+
+		it('return min value', () => {
+			const num = [1, 2, -3],
+				str = ['a', 'ba', 'caa'];
+
+			expect(Ninq.min(num)).toBe(-3);
+			expect(Ninq.min(str, s => s.length)).toBe(1);
+		});
+
+		it('return undefined', () => {
+			const num = [] as number[],
+				str = [] as string[];
+
+			expect(Ninq.min(num)).toBeUndefined();
+			expect(Ninq.min(str, s => s.length)).toBeUndefined();
+		});
+
+	});
+
+
 });

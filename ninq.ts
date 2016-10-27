@@ -207,6 +207,12 @@ export class Ninq<T> implements Iterable<T> {
 			: Ninq.count(this);
 	}
 
+	private static $default<T>(x: T | undefined, defVal: T) {
+		return x === undefined
+			? defVal
+			: x;
+	}
+
 	/**
 	 * Returns the elements of the specified sequence or the specified value in a singleton collection if the sequence is empty
 	 *
@@ -938,6 +944,231 @@ export class Ninq<T> implements Iterable<T> {
 			otherKeySelector,
 			comparer
 		));
+	}
+
+	/**
+	 * Returns the last element of a sequence, or a default value if the sequence contains no elements
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - An Iterable<T> to return the last element of
+	 * @param {T} defValue - Default value to return in case the sequence is empty
+	 * @returns {T} - defValue if the source sequence is empty;
+	 * 	otherwise, the last element in the IEnumerable<T>
+	 *
+	 * @memberOf Ninq
+	 */
+	static lastOrDefault<T>(it: Iterable<T>, defValue: T): T;
+	/**
+	 * Returns the last element of a sequence that satisfies a condition or a default value if no such element is found
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - An Iterable<T> to return the last element of
+	 * @param {T} defValue - Default value to return in case no element satisfies the predicate
+	 * @param {Predicate<T>} predicate - A function to test each element for a condition
+	 * @returns {T} - defValue if the sequence is empty or if no elements pass the test in the predicate function;
+	 * 	otherwise, the last element that passes the test in the predicate function
+	 *
+	 * @memberOf Ninq
+	 */
+	static lastOrDefault<T>(it: Iterable<T>, defValue: T, predicate: Predicate<T>): T;
+	static lastOrDefault<T>(it: Iterable<T>, defValue: T, predicate?: Predicate<T>) {
+		if (predicate) {
+			it = Ninq.filter(it, predicate);
+		}
+		let result = defValue;
+		for (result of it) {
+			;
+		}
+		return result;
+	}
+
+	/**
+	 * Returns the last element of a sequence, or a default value if the sequence contains no elements
+	 *
+	 * @param {T} defValue - Default value to return in case the sequence is empty
+	 * @returns {T} - defValue if the source sequence is empty;
+	 * 	otherwise, the last element in the IEnumerable<T>
+	 *
+	 * @memberOf Ninq
+	 */
+	lastOrDefault(defValue: T): T;
+	/**
+	 * Returns the last element of a sequence that satisfies a condition or a default value if no such element is found
+	 *
+	 * @param {T} defValue - Default value to return in case no element satisfies the predicate
+	 * @param {Predicate<T>} predicate - A function to test each element for a condition
+	 * @returns {T} - defValue if the sequence is empty or if no elements pass the test in the predicate function;
+	 * 	otherwise, the last element that passes the test in the predicate function
+	 *
+	 * @memberOf Ninq
+	 */
+	lastOrDefault(defValue: T, predicate: Predicate<T>): T;
+	lastOrDefault(defValue: T, predicate?: Predicate<T>) {
+		return predicate
+			? Ninq.lastOrDefault(this.iterable, defValue, predicate)
+			: Ninq.lastOrDefault(this.iterable, defValue);
+	}
+
+	/**
+	 * Returns the last element of a sequence
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - An Iterable<T> to return the last element of
+	 * @returns {T} - The value at the last position in the source sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static last<T>(it: Iterable<T>): T;
+	/**
+	 * Returns the last element of a sequence that satisfies a specified condition
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - An Iterable<T> to return the last element of
+	 * @param {Predicate<T>} predicate - A function to test each element for a condition
+	 * @returns {T} - The last element in the sequence that passes the test in the specified predicate function
+	 *
+	 * @memberOf Ninq
+	 */
+	static last<T>(it: Iterable<T>, predicate: Predicate<T>): T;
+	static last<T>(it: Iterable<T>, predicate?: Predicate<T>) {
+		const result = predicate
+			? Ninq.lastOrDefault<T | '\0__ERROR__\0'>(it, '\0__ERROR__\0', predicate)
+			: Ninq.lastOrDefault<T | '\0__ERROR__\0'>(it, '\0__ERROR__\0');
+		if (result === '\0__ERROR__\0') {
+			throw new Error('No values returned from iterable');
+		}
+		return result;
+	}
+
+	/**
+	 * Returns the last element of a sequence
+	 *
+	 * @returns {T} - The value at the last position in the source sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	last(): T;
+	/**
+	 * Returns the last element of a sequence that satisfies a specified condition
+	 *
+	 * @param {Predicate<T>} predicate - A function to test each element for a condition
+	 * @returns {T} - The last element in the sequence that passes the test in the specified predicate function
+	 *
+	 * @memberOf Ninq
+	 */
+	last(predicate: Predicate<T>): T;
+	last(predicate?: Predicate<T>) {
+		return predicate
+			? Ninq.last(this.iterable, predicate)
+			: Ninq.last(this.iterable);
+	}
+
+	/**
+	 * Returns the maximum value in a sequence
+	 *
+	 * @static
+	 * @param {Iterable<number>} it - A sequence of values to determine the maximum value of
+	 * @returns {(number | undefined)} - The maximum value in the sequence or undefined
+	 *
+	 * @memberOf Ninq
+	 */
+	static max(it: Iterable<number>): number | undefined;
+	/**
+	 * Invokes a transform function on each element of a sequence and returns the maximum value
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - A sequence of values to determine the maximum value of
+	 * @param {Mapping<T, number>} valSelector - A transform function to apply to each element
+	 * @returns {(number | undefined)} - The maximum value in the sequence or undefined
+	 *
+	 * @memberOf Ninq
+	 */
+	static max<T>(it: Iterable<T>, valSelector: Mapping<T, number>): number | undefined;
+	static max<T>(it: Iterable<T>, valSelector?: Mapping<T, number>) {
+		const selector = valSelector || (x => x as any as number);
+		return Ninq.reduce(it, (max: number | undefined, current: T) =>
+			Math.max(Ninq.$default(max, -Infinity), selector(current))
+		);
+	}
+
+	/**
+	 * Returns the maximum value
+	 *
+	 * @returns {(number | undefined)} - The maximum value in the sequence or undefined
+	 *
+	 * @memberOf Ninq
+	 */
+	max(): number | undefined;
+	/**
+	 * Invokes a transform function on each element of the sequence and returns the maximum value
+	 *
+	 * @param {Mapping<T, number>} valSelector - A transform function to apply to each element
+	 * @returns {(number | undefined)} - The maximum value in the sequence or undefined
+	 *
+	 * @memberOf Ninq
+	 */
+	max(valSelector: Mapping<T, number>): number | undefined;
+	max(valSelector?: Mapping<T, number>) {
+		return valSelector
+			? Ninq.max(this.iterable, valSelector)
+			: Ninq.max(this.iterable as any);
+	}
+
+	/**
+	 * Returns the minimum value in a sequence
+	 *
+	 * @static
+	 * @param {Iterable<number>} it - A sequence of values to determine the minimum value of
+	 * @returns {(number | undefined)} - The minimum value in the sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static min(it: Iterable<number>): number | undefined;
+	/**
+	 * Invokes a transform function on each element of a sequence and returns the minimum value
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - A sequence of values to determine the minimum value of
+	 * @param {Mapping<T, number>} valSelector - A transform function to apply to each element
+	 * @returns {(number | undefined)} - The minimum value in the sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static min<T>(it: Iterable<T>, valSelector: Mapping<T, number>): number | undefined;
+	static min<T>(it: Iterable<T>, valSelector?: Mapping<T, number>) {
+		const selector = valSelector || (x => x as any as number);
+		return Ninq.reduce(it, (min: number | undefined, current: T) =>
+			Math.min(Ninq.$default(min, Infinity), selector(current))
+		);
+	}
+
+	/**
+	 * Returns the minimum value
+	 *
+	 * @returns {(number | undefined)} - The minimum value in the sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	min(): number | undefined;
+	/**
+	 * Invokes a transform function on each element of a sequence and returns the minimum value
+	 *
+	 * @param {Mapping<T, number>} valSelector - A transform function to apply to each element
+	 * @returns {(number | undefined)} - The minimum value in the sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	min(valSelector: Mapping<T, number>): number | undefined;
+	min(valSelector?: Mapping<T, number>) {
+		return valSelector
+			? Ninq.min(this.iterable, valSelector)
+			: Ninq.min(this.iterable as any);
 	}
 
 	/**
