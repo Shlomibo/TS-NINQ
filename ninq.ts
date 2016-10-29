@@ -1,5 +1,5 @@
 import ConcatIterable from './operators/concat';
-import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping } from './types';
+import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping, SortedCollection } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
@@ -12,7 +12,7 @@ import { JoinMatch } from './operators/join';
 import JoinIterable from './operators/join';
 import { SortedIterable, SortingIterable, isSortedIterable } from './operators/sortBy';
 import { ReverseIterable } from './operators/reverse';
-import { MappingIterable } from './operators/map';
+import { MappingIterable, MapManyIterable } from './operators/map';
 
 /**
  * Provides functionality around iterables.
@@ -1135,6 +1135,106 @@ export class Ninq<T> implements Iterable<T> {
 	map<TResult>(mapping: Mapping<T, TResult>) {
 		const it = Ninq.map(this.iterable, mapping);
 		return new Ninq<TResult>(it);
+	}
+
+	/**
+	 * Flattens the sequences into one sequence, and invokes a result selector function on each element therein.
+	 * 	The index of each source element is used in the intermediate projected form of that element
+	 *
+	 * @static
+	 * @template T - The type of the elements of source
+	 * @template TResult - The type of the elements of the resulting sequence
+	 * @param {Iterable<Iterable<T>>} it - A sequence of values to project
+	 * @param {Mapping<T, TResult>} mapping - A transform function to apply to each element of the intermediate sequence
+	 * @returns {Iterable<TResult>} - An Iterable<TResult> whose elements are the result of invoking the mapping each
+	 * 	of the sequence elements to a result element
+	 *
+	 * @memberOf Ninq
+	 */
+	static mapMany<T, TResult>(it: Iterable<Iterable<T>>, mapping: Mapping<T, TResult>): Iterable<TResult>;
+	/**
+	 * Projects each element of a sequence to an Iterable<TCollection>,
+	 * 	flattens the resulting sequences into one sequence, and invokes a result selector function on each element therein.
+	 * 	The index of each source element is used in the intermediate projected form of that element
+	 *
+	 * @static
+	 * @template T - The type of the elements of source
+	 * @template TCollection - The type of the intermediate elements collected by sequenceMapping
+	 * @template TResult - The type of the elements of the resulting sequence
+	 * @param {Iterable<T>} it - A sequence of values to project
+	 * @param {Mapping<T, Iterable<TCollection>>} sequenceMapping - A transform function to apply to each source element;
+	 * 	the second parameter of the function represents the index of the source element
+	 * @param {Mapping<TCollection, TResult>} resultMapping - A transform function to apply to each element of the intermediate sequence
+	 * @returns {Iterable<TResult>} - An Iterable<TResult> whose elements are the result of invoking the one-to-many transform function
+	 * 	collectionSelector on each element of source and then mapping each of those sequence elements and
+	 * 	their corresponding source element to a result element
+	 *
+	 * @memberOf Ninq
+	 */
+	static mapMany<T, TCollection, TResult>(
+		it: Iterable<T>,
+		sequenceMapping: Mapping<T, Iterable<TCollection>>,
+		resultMapping: Mapping<TCollection, TResult>
+	): Iterable<TResult>;
+	static mapMany<T, TCollection, TResult>(
+		it: Iterable<T>,
+		seqOrResMapping: Mapping<T, Iterable<TCollection>> | Mapping<T, TResult>,
+		resultMapping?: Mapping<TCollection, TResult>
+	): Iterable<TResult> {
+		if (!resultMapping) {
+			resultMapping = seqOrResMapping as any;
+			seqOrResMapping = x => x as any;
+		}
+		return new MapManyIterable<T, TCollection, TResult>(
+			it,
+			seqOrResMapping as any,
+			resultMapping as any
+		);
+	}
+
+	/**
+	 * Flattens the sequences into one sequence, and invokes a result selector function on each element therein.
+	 * 	The index of each source element is used in the intermediate projected form of that element
+	 *
+	 * @template TResult - The type of the elements of the resulting sequence
+	 * @param {Mapping<any, TResult>} mapping - A transform function to apply to each element of the intermediate sequence
+	 * @returns {Ninq<TResult>} - An Iterable<TResult> whose elements are the result of invoking the mapping each
+	 * 	of the sequence elements to a result element
+	 *
+	 * @memberOf Ninq
+	 */
+	mapMany<TResult>(mapping: Mapping<any, TResult>): Ninq<TResult>;
+	/**
+	 * Projects each element of a sequence to an Iterable<TCollection>,
+	 * 	flattens the resulting sequences into one sequence, and invokes a result selector function on each element therein.
+	 * 	The index of each source element is used in the intermediate projected form of that element
+	 *
+	 * @template TCollection - The type of the intermediate elements collected by sequenceMapping
+	 * @template TResult - The type of the elements of the resulting sequence
+	 * @param {Mapping<T, Iterable<TCollection>>} sequenceMapping - A transform function to apply to each source element;
+	 * 	the second parameter of the function represents the index of the source element
+	 * @param {Mapping<TCollection, TResult>} resultMapping - A transform function to apply to each element of the intermediate sequence
+	 * @returns {Ninq<TResult>}
+	 * @returns {Ninq<TResult>} - An Iterable<TResult> whose elements are the result of invoking the one-to-many transform function
+	 * 	collectionSelector on each element of source and then mapping each of those sequence elements and
+	 * 	their corresponding source element to a result element
+	 *
+	 * @memberOf Ninq
+	 */
+	mapMany<TCollection, TResult>(
+		sequenceMapping: Mapping<T, Iterable<TCollection>>,
+		resultMapping: Mapping<TCollection, TResult>
+		): Ninq<TResult>;
+	mapMany(
+		seqOrResMapping: Mapping<any, any>,
+		resultMapping?: Mapping<any, any>
+	) {
+		if (!resultMapping) {
+			resultMapping = seqOrResMapping;
+			seqOrResMapping = x => x;
+		}
+		const it = Ninq.mapMany(this.iterable, seqOrResMapping, resultMapping);
+		return new Ninq(it);
 	}
 
 	/**
