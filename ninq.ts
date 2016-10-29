@@ -13,6 +13,7 @@ import JoinIterable from './operators/join';
 import { SortedIterable, SortingIterable, isSortedIterable } from './operators/sortBy';
 import { ReverseIterable } from './operators/reverse';
 import { MappingIterable, MapManyIterable } from './operators/map';
+import { ZipIterable } from './operators/zip';
 
 /**
  * Provides functionality around iterables.
@@ -1503,6 +1504,38 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
+	 * Determines whether two sequences are equal by comparing the elements
+	 *
+	 * @template T - The type of the elements of the input sequences
+	 * @param {Iterable<T>} left - An Iterable<T> to compare to right sequence
+	 * @param {Iterable<T>} right - An Iterable<T> to compare to the left sequence
+	 * @param {EqualityComparer<T>} [equalityComparer] - A comparing func to compare elements
+	 * @returns {boolean} - true if the two source sequences are of equal length and their corresponding elements compare equal; otherwise, false
+	 *
+	 * @memberOf Ninq
+	 */
+	static sequenceEqual<T>(left: Iterable<T>, right: Iterable<T>, equalityComparer?: EqualityComparer<T>): boolean {
+		const comparer = equalityComparer || ((x, y) => x === y) as EqualityComparer<T>;
+		return Ninq.every(
+			Ninq.zip(left, right),
+			([left, right]) => comparer(left, right)
+		);
+	}
+
+	/**
+	 * Determines whether two sequences are equal by comparing the elements
+	 *
+	 * @param {Iterable<T>} other - An Iterable<T> to compare to the this sequence
+	 * @param {EqualityComparer<T>} [equalityComparer] - A comparing func to compare elements
+	 * @returns {boolean} - true if the two source sequences are of equal length and their corresponding elements compare equal; otherwise, false
+	 *
+	 * @memberOf Ninq
+	 */
+	sequenceEqual(other: Iterable<T>, equalityComparer?: EqualityComparer<T>): boolean {
+		return Ninq.sequenceEqual(this.iterable, other, equalityComparer);
+	}
+
+	/**
 	 * Determines whether a sequence contains any elements
 	 *
 	 * @static
@@ -1650,6 +1683,62 @@ export class Ninq<T> implements Iterable<T> {
 			throw new TypeError('Can only be called with sorted iterables');
 		}
 		return iterable.thenBy(comparer, descending);
+	}
+
+	/**
+	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
+	 *
+	 * @static
+	 * @template L - The type of the elements of the input sequences
+	 * @template R - The type of the elements of the input sequences
+	 * @param {Iterable<L>} left - The first sequence to merge
+	 * @param {Iterable<R>} right - The second sequence to merge
+	 * @returns {Iterable<[T, T]>} - An Iterable<T> that contains merged elements of two input sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	static zip<L, R>(left: Iterable<L>, right: Iterable<R>): Iterable<[L, R]>;
+	/**
+	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
+	 *
+	 * @static
+	 * @template T - The type of the elements of the input sequences
+	 * @param {Iterable<T>} left - The first sequence to merge
+	 * @param {Iterable<T>} right - The second sequence to merge
+	 * @param {boolean} [throughAll] - true to return all elements from both sequences; otherwise, iteration stops with
+	 *	the first exhausted sequence
+	 * @returns {(Iterable<[T | undefined, T | undefined]>)} - An Iterable<T> that contains merged elements of two input sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	static zip<L, R>(left: Iterable<L>, right: Iterable<R>, throughAll?: boolean): Iterable<[L | undefined, R | undefined]>;
+	static zip<L, R>(left: Iterable<L>, right: Iterable<R>, throughAll?: boolean) {
+		return new ZipIterable(left, right, throughAll);
+	}
+
+	/**
+	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
+	 *
+	 * @param {Iterable<T>} other - The other sequence to merge
+	 * @returns {(Ninq<[T, T]>)} - An Iterable<T> that contains merged elements of two input sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	zip<U>(other: Iterable<U>): Ninq<[T, U]>;
+	/**
+	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
+	 *
+	 * @param {Iterable<T>} other - The other sequence to merge
+	 * @param {boolean} [throughAll] - true to return all elements from both sequences; otherwise, iteration stops with
+	 *	the first exhausted sequence
+	 * @returns {(Ninq<[T | undefined, T | undefined]>)} - An Iterable<T> that contains merged elements of two input sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	zip<U>(other: Iterable<U>, throughAll?: boolean): Ninq<[T | undefined, U | undefined]>;
+	zip<U>(other: Iterable<U>, throughAll?: boolean) {
+		const it = Ninq.zip(this.iterable, other);
+		return new Ninq(it);
 	}
 }
 

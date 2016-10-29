@@ -327,4 +327,16 @@ describe('Test Base ninq class', () => {
 
 	});
 
+
+	describe('equality', () => {
+
+		it('test for equality', () => {
+			const left = [1, 2, 3],
+			right = [1, 2, 3];
+			expect(Ninq.sequenceEqual(left, right)).toBe(true);
+		});
+
+	});
+
+
 });
