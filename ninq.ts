@@ -1,5 +1,5 @@
 import ConcatIterable from './operators/concat';
-import { Mapping, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc } from './types';
+import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
@@ -12,6 +12,7 @@ import { JoinMatch } from './operators/join';
 import JoinIterable from './operators/join';
 import { SortedIterable, SortingIterable, isSortedIterable } from './operators/sortBy';
 import { ReverseIterable } from './operators/reverse';
+import { MappingIterable } from './operators/map';
 
 /**
  * Provides functionality around iterables.
@@ -43,7 +44,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static average<T>(it: Iterable<T>, selector: Mapping<T, number>) {
+	static average<T>(it: Iterable<T>, selector: KeySelector<T, number>) {
 		return Ninq.reduce<T, number>(
 			it,
 			(prev, item, index) => {
@@ -67,7 +68,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	average(selector: Mapping<T, number>) {
+	average(selector: KeySelector<T, number>) {
 		return Ninq.average(this.iterable, selector);
 	}
 
@@ -85,7 +86,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static byKey<T, TKey, TResult>(
-		keySelector: Mapping<T, TKey>,
+		keySelector: KeySelector<T, TKey>,
 		comparer: ComparisonFunc<TKey, TResult>
 	): ComparisonFunc<T, TResult> {
 
@@ -577,7 +578,7 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	static groupBy<T, TKey>(
 		it: Iterable<T>,
-		keySelector: Mapping<T, TKey>,
+		keySelector: KeySelector<T, TKey>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<Grouping<T, TKey>>;
 	/**
@@ -599,14 +600,14 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	static groupBy<T, TKey, TResult>(
 		it: Iterable<T>,
-		keySelector: Mapping<T, TKey>,
-		elementSelector: Mapping<T, TResult>,
+		keySelector: KeySelector<T, TKey>,
+		elementSelector: KeySelector<T, TResult>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<Grouping<TResult, TKey>>;
 	static groupBy<T, TKey, TResult>(
 		it: Iterable<T>,
-		keySelector: Mapping<T, TKey>,
-		selectorOrComparer: Mapping<T, TResult> | EqualityComparer<TKey> | undefined,
+		keySelector: KeySelector<T, TKey>,
+		selectorOrComparer: KeySelector<T, TResult> | EqualityComparer<TKey> | undefined,
 		comparer?: EqualityComparer<TKey>
 	) {
 		if (!comparer && (selectorOrComparer && selectorOrComparer.length === 2)) {
@@ -614,12 +615,12 @@ export class Ninq<T> implements Iterable<T> {
 			selectorOrComparer = undefined;
 		}
 		if (!selectorOrComparer) {
-			selectorOrComparer = (x => x as any) as Mapping<T, TResult>;
+			selectorOrComparer = (x => x as any) as KeySelector<T, TResult>;
 		}
 		return new GroupingIterable<T, TKey, TResult>(
 			it,
 			keySelector,
-			selectorOrComparer as Mapping<T, TResult>,
+			selectorOrComparer as KeySelector<T, TResult>,
 			comparer
 		);
 	}
@@ -635,7 +636,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	groupBy<TKey>(keySelector: Mapping<T, TKey>, comparer?: EqualityComparer<TKey>): Ninq<Grouping<T, TKey>>;
+	groupBy<TKey>(keySelector: KeySelector<T, TKey>, comparer?: EqualityComparer<TKey>): Ninq<Grouping<T, TKey>>;
 	/**
 	 * Groups the elements of a sequence according to a key selector function.
 	 * 	The keys are compared by using a comparer and each group's elements are projected by using a specified function
@@ -651,13 +652,13 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	groupBy<TKey, TResult>(
-		keySelector: Mapping<T, TKey>,
-		elementSelector: Mapping<T, TResult>,
+		keySelector: KeySelector<T, TKey>,
+		elementSelector: KeySelector<T, TResult>,
 		comparer?: EqualityComparer<TKey>
 	): Ninq<Grouping<T, TKey>>;
 	groupBy<TKey, TResult>(
-		keySelector: Mapping<T, TKey>,
-		selectorOrComparer: Mapping<T, TResult> | EqualityComparer<TKey> | undefined,
+		keySelector: KeySelector<T, TKey>,
+		selectorOrComparer: KeySelector<T, TResult> | EqualityComparer<TKey> | undefined,
 		comparer?: EqualityComparer<TKey>
 	) {
 		if (!comparer && (selectorOrComparer && selectorOrComparer.length === 2)) {
@@ -668,7 +669,7 @@ export class Ninq<T> implements Iterable<T> {
 			? Ninq.groupBy(
 				this.iterable,
 				keySelector,
-				selectorOrComparer as Mapping<T, TResult>,
+				selectorOrComparer as KeySelector<T, TResult>,
 				comparer
 			)
 			: Ninq.groupBy(
@@ -700,8 +701,8 @@ export class Ninq<T> implements Iterable<T> {
 	static groupJoin<TOuner, TInner, TKey>(
 		outer: Iterable<TOuner>,
 		inner: Iterable<TInner>,
-		outerSelector: Mapping<TOuner, TKey>,
-		innerSelector: Mapping<TInner, TKey>,
+		outerSelector: KeySelector<TOuner, TKey>,
+		innerSelector: KeySelector<TInner, TKey>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<GroupJoinEntry<TOuner, TInner>>;
 	/**
@@ -728,17 +729,17 @@ export class Ninq<T> implements Iterable<T> {
 	static groupJoin<TOuner, TInner, TKey, TResult>(
 		outer: Iterable<TOuner>,
 		inner: Iterable<TInner>,
-		outerSelector: Mapping<TOuner, TKey>,
-		innerSelector: Mapping<TInner, TKey>,
-		resultSelector: Mapping<GroupJoinEntry<TOuner, TInner>, TResult>,
+		outerSelector: KeySelector<TOuner, TKey>,
+		innerSelector: KeySelector<TInner, TKey>,
+		resultSelector: KeySelector<GroupJoinEntry<TOuner, TInner>, TResult>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<TResult>;
 	static groupJoin<TOuner, TInner, TKey, TResult>(
 		outer: Iterable<TOuner>,
 		inner: Iterable<TInner>,
-		outerSelector: Mapping<TOuner, TKey>,
-		innerSelector: Mapping<TInner, TKey>,
-		resultSelectorOrComparer?: Mapping<GroupJoinEntry<TOuner, TInner>, TResult> | EqualityComparer<TKey>,
+		outerSelector: KeySelector<TOuner, TKey>,
+		innerSelector: KeySelector<TInner, TKey>,
+		resultSelectorOrComparer?: KeySelector<GroupJoinEntry<TOuner, TInner>, TResult> | EqualityComparer<TKey>,
 		comparer?: EqualityComparer<TKey>
 	) {
 		if (!resultSelectorOrComparer || resultSelectorOrComparer.length === 2) {
@@ -757,7 +758,7 @@ export class Ninq<T> implements Iterable<T> {
 				inner,
 				outerSelector,
 				innerSelector,
-				resultSelectorOrComparer as Mapping<GroupJoinEntry<TOuner, TInner>, TResult>,
+				resultSelectorOrComparer as KeySelector<GroupJoinEntry<TOuner, TInner>, TResult>,
 				comparer
 			);
 		}
@@ -779,8 +780,8 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	groupJoin<TInner, TKey>(
 		inner: Iterable<TInner>,
-		keySelector: Mapping<T, TKey>,
-		innerKeySelector: Mapping<TInner, TKey>,
+		keySelector: KeySelector<T, TKey>,
+		innerKeySelector: KeySelector<TInner, TKey>,
 		comparer?: EqualityComparer<TKey>
 	): Ninq<GroupJoinEntry<T, TInner>>;
 	/**
@@ -803,16 +804,16 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	groupJoin<TInner, TKey, TResult>(
 		inner: Iterable<TInner>,
-		keySelector: Mapping<T, TKey>,
-		innerKeySelector: Mapping<TInner, TKey>,
-		resultSelecor: Mapping<GroupJoinEntry<T, TInner>, TResult>,
+		keySelector: KeySelector<T, TKey>,
+		innerKeySelector: KeySelector<TInner, TKey>,
+		resultSelecor: KeySelector<GroupJoinEntry<T, TInner>, TResult>,
 		comparer?: EqualityComparer<TKey>
 	): Ninq<TResult>;
 	groupJoin<TInner, TKey, TResult>(
 		inner: Iterable<TInner>,
-		keySelector: Mapping<T, TKey>,
-		innerKeySelector: Mapping<TInner, TKey>,
-		resultSelecorOrComparer?: Mapping<GroupJoinEntry<T, TInner>, TResult> | EqualityComparer<TKey>,
+		keySelector: KeySelector<T, TKey>,
+		innerKeySelector: KeySelector<TInner, TKey>,
+		resultSelecorOrComparer?: KeySelector<GroupJoinEntry<T, TInner>, TResult> | EqualityComparer<TKey>,
 		comparer?: EqualityComparer<TKey>
 	) {
 		let resultIterable: Iterable<TResult>;
@@ -831,7 +832,7 @@ export class Ninq<T> implements Iterable<T> {
 				inner,
 				keySelector,
 				innerKeySelector,
-				resultSelecorOrComparer as Mapping<GroupJoinEntry<T, TInner>, TResult>,
+				resultSelecorOrComparer as KeySelector<GroupJoinEntry<T, TInner>, TResult>,
 				comparer
 			);
 		}
@@ -940,8 +941,8 @@ export class Ninq<T> implements Iterable<T> {
 	static join<TOuter, TInner, TKey>(
 		outer: Iterable<TOuter>,
 		inner: Iterable<TInner>,
-		outerKeySelector: Mapping<TOuter, TKey>,
-		innerKeySelector: Mapping<TInner, TKey>,
+		outerKeySelector: KeySelector<TOuter, TKey>,
+		innerKeySelector: KeySelector<TInner, TKey>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<JoinMatch<TOuter, TInner>> {
 		return new JoinIterable(
@@ -968,8 +969,8 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	join<TOther, TKey>(
 		other: Iterable<TOther>,
-		keySelector: Mapping<T, TKey>,
-		otherKeySelector: Mapping<TOther, TKey>,
+		keySelector: KeySelector<T, TKey>,
+		otherKeySelector: KeySelector<TOther, TKey>,
 		comparer?: EqualityComparer<TKey>
 	) {
 		return new Ninq(Ninq.join(
@@ -1103,6 +1104,40 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
+	 * Projects each element of a sequence into a new form by incorporating the element's index
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @template TResult - The type of the value returned by mapping
+	 * @param {Iterable<T>} it - A sequence of values to invoke a transform function on
+	 * @param {Mapping<T, TResult>} mapping - A transform function to apply to each source element;
+	 * 	the second parameter of the function represents the index of the source element
+	 * @returns {Iterable<TResult>} - An Iterable<T> whose elements are the result of invoking the transform function on each element of this
+	 *
+	 * @memberOf Ninq
+	 */
+	static map<T, TResult>(it: Iterable<T>, mapping: Mapping<T, TResult>)
+		: Iterable<TResult> {
+
+		return new MappingIterable<T, TResult>(it, mapping);
+	}
+
+	/**
+	 * Projects each element of a sequence into a new form by incorporating the element's index
+	 *
+	 * @template TResult - The type of the value returned by mapping
+	 * @param {Mapping<T, TResult>} mapping - A transform function to apply to each source element;
+	 * 	the second parameter of the function represents the index of the source element
+	 * @returns - An Iterable<T> whose elements are the result of invoking the transform function on each element of this
+	 *
+	 * @memberOf Ninq
+	 */
+	map<TResult>(mapping: Mapping<T, TResult>) {
+		const it = Ninq.map(this.iterable, mapping);
+		return new Ninq<TResult>(it);
+	}
+
+	/**
 	 * Returns the maximum value in a sequence
 	 *
 	 * @static
@@ -1123,8 +1158,8 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static max<T>(it: Iterable<T>, valSelector: Mapping<T, number>): number | undefined;
-	static max<T>(it: Iterable<T>, valSelector?: Mapping<T, number>) {
+	static max<T>(it: Iterable<T>, valSelector: KeySelector<T, number>): number | undefined;
+	static max<T>(it: Iterable<T>, valSelector?: KeySelector<T, number>) {
 		const selector = valSelector || (x => x as any as number);
 		return Ninq.reduce(it, (max: number | undefined, current: T) =>
 			Math.max(Ninq.$default(max, -Infinity), selector(current))
@@ -1147,8 +1182,8 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	max(valSelector: Mapping<T, number>): number | undefined;
-	max(valSelector?: Mapping<T, number>) {
+	max(valSelector: KeySelector<T, number>): number | undefined;
+	max(valSelector?: KeySelector<T, number>) {
 		return valSelector
 			? Ninq.max(this.iterable, valSelector)
 			: Ninq.max(this.iterable as any);
@@ -1175,8 +1210,8 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static min<T>(it: Iterable<T>, valSelector: Mapping<T, number>): number | undefined;
-	static min<T>(it: Iterable<T>, valSelector?: Mapping<T, number>) {
+	static min<T>(it: Iterable<T>, valSelector: KeySelector<T, number>): number | undefined;
+	static min<T>(it: Iterable<T>, valSelector?: KeySelector<T, number>) {
 		const selector = valSelector || (x => x as any as number);
 		return Ninq.reduce(it, (min: number | undefined, current: T) =>
 			Math.min(Ninq.$default(min, Infinity), selector(current))
@@ -1199,8 +1234,8 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	min(valSelector: Mapping<T, number>): number | undefined;
-	min(valSelector?: Mapping<T, number>) {
+	min(valSelector: KeySelector<T, number>): number | undefined;
+	min(valSelector?: KeySelector<T, number>) {
 		return valSelector
 			? Ninq.min(this.iterable, valSelector)
 			: Ninq.min(this.iterable as any);

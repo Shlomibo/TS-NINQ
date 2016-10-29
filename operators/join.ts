@@ -1,4 +1,4 @@
-import { Mapping, EqualityComparer } from '../types';
+import { KeySelector, EqualityComparer } from '../types';
 
 export interface JoinMatch<TOuter, TInner> {
 	outer: TOuter;
@@ -10,8 +10,8 @@ export default class JoinIterable<TOuter, TInner, TKey> implements Iterable<Join
 	constructor(
 		private readonly outer: Iterable<TOuter>,
 		private readonly inner: Iterable<TInner>,
-		private readonly outerKeySelector: Mapping<TOuter, TKey>,
-		private readonly innerKeySelector: Mapping<TInner, TKey>,
+		private readonly outerKeySelector: KeySelector<TOuter, TKey>,
+		private readonly innerKeySelector: KeySelector<TInner, TKey>,
 		private readonly comparer?: EqualityComparer<TKey>
 	) {
 	}
