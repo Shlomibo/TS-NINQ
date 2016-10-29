@@ -2,6 +2,7 @@
   "name": "ts-ninq",
   "dependencies": {},
   "globalDependencies": {
-    "jasmine": "registry:dt/jasmine#2.5.0+20161003201800"
+    "jasmine": "registry:dt/jasmine#2.5.0+20161003201800",
+    "node": "registry:dt/node#6.0.0+20161019125345"
   }
 }

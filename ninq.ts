@@ -1,5 +1,5 @@
 import ConcatIterable from './operators/concat';
-import { Mapping, Predicate, EqualityComparer, ReductionFunc } from './types';
+import { Mapping, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
@@ -10,7 +10,16 @@ import GroupJoinIterable from './operators/group-join';
 import IntersectionIterator from './operators/intersect';
 import { JoinMatch } from './operators/join';
 import JoinIterable from './operators/join';
+import { SortedIterable, SortingIterable, isSortedIterable } from './operators/sortBy';
 
+/**
+ * Provides functionality around iterables.
+ *
+ * @export
+ * @class Ninq
+ * @implements {Iterable<T>}
+ * @template T
+ */
 export class Ninq<T> implements Iterable<T> {
 	constructor(private readonly iterable: Iterable<T>) {
 	}
@@ -59,6 +68,31 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	average(selector: Mapping<T, number>) {
 		return Ninq.average(this.iterable, selector);
+	}
+
+	/**
+	 * Returns a comparing function for comparing a selected key by the specified comparer.
+	 *
+	 * @static
+	 * @template T - The element's type
+	 * @template TKey - The selected key's type
+	 * @template TResult - The comparison result
+	 * @param {Mapping<T, TKey>} keySelector - A mapping between an element to a ket for comparison
+	 * @param {ComparisonFunc<TKey, TResult>} comparer - A comparing function to compare keys
+	 * @returns {ComparisonFunc<T, TResult>} - A comparing function to compare an element by the selected key
+	 *
+	 * @memberOf Ninq
+	 */
+	static byKey<T, TKey, TResult>(
+		keySelector: Mapping<T, TKey>,
+		comparer: ComparisonFunc<TKey, TResult>
+	) : ComparisonFunc<T, TResult> {
+
+		return (x, y) => {
+			const xKey = keySelector(x),
+				yKey = keySelector(y);
+			return comparer(xKey, yKey);
+		};
 	}
 
 	/**
@@ -1315,6 +1349,101 @@ export class Ninq<T> implements Iterable<T> {
 		return typeof prediacte === 'function'
 			? Ninq.some(this.iterable, prediacte)
 			: Ninq.some(this);
+	}
+
+	/**
+	 * Sorts the elements of a sequence in the specified order (default: ascending)
+	 *
+	 * @static
+	 * @param {Iterable<number>} iterable - A sequence of values to order
+	 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
+	 * @returns {SortedIterable<number>} - A SortedInterable<T> whose elements are sorted
+	 *
+	 * @memberOf Ninq
+	 */
+	static sortBy(iterable: Iterable<number>, descending?: boolean): SortedIterable<number>;
+	/**
+	 * Sorts the elements of a sequence in the specified order (default: ascending)
+	 *
+	 * @static
+	 * @param {Iterable<string>} iterable - A sequence of values to order
+	 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
+	 * @returns {SortedIterable<string>} - A SortedInterable<T> whose elements are sorted
+	 *
+	 * @memberOf Ninq
+	 */
+	static sortBy(iterable: Iterable<string>, descending?: boolean): SortedIterable<string>;
+	/**
+	 * Sorts the elements of a sequence in the specified order (default: ascending) by using a specified comparer
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} iterable - A sequence of values to order
+	 * @param {Comparer<T>} comparer - A comparer to compare keys
+	 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
+	 * @returns {SortedIterable<T>} - A SortedInterable<T> whose elements are sorted
+	 *
+	 * @memberOf Ninq
+	 */
+	static sortBy<T>(iterable: Iterable<T>, comparer: Comparer<T>, descending?: boolean): SortedIterable<T>;
+	static sortBy<T>(iterable: Iterable<T>, comparerOrDesc?: Comparer<T> | boolean, descending?: boolean) {
+		let comparer: Comparer<T | Comparable>;
+		[comparer, descending] = !comparerOrDesc || typeof comparerOrDesc === 'boolean'
+			? [
+				(x: Comparable, y: Comparable) =>
+					x < y ? -1 :
+						x === y ? 0 :
+							1,
+				comparerOrDesc || descending
+			]
+			: [comparerOrDesc, descending];
+
+		return new SortingIterable(iterable, comparer, descending);
+	}
+
+	/**
+	 * Sorts the elements of the sequence in the specified order (default: ascending)
+	 *
+	 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
+	 * @returns {SortedIterable<T>} - A SortedInterable<T> whose elements are sorted
+	 *
+	 * @memberOf Ninq
+	 */
+	sortBy(descending?: boolean): SortedIterable<T>;
+	/**
+	 * Sorts the elements of the sequence in the specified order (default: ascending) by using a specified comparer
+	 *
+	 * @param {Comparer<T>} comparer - A comparer to compare keys
+	 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
+	 * @returns {SortedIterable<T>} - A SortedInterable<T> whose elements are sorted
+	 *
+	 * @memberOf Ninq
+	 */
+	sortBy(comparer?: Comparer<T>, descending?: boolean): SortedIterable<T>;
+	sortBy(compOrDesc?: Comparer<T> | boolean, descending?: boolean): SortedIterable<T> & Ninq<T> {
+		let comparer: Comparer<T>;
+		[comparer, descending] = !compOrDesc || (typeof compOrDesc === 'boolean')
+			? [defaultComparer, !!(compOrDesc || descending)]
+			: [compOrDesc, !!descending];
+
+		const resultIterable = Ninq.sortBy(this.iterable, comparer, descending);
+		return new Ninq<T>(resultIterable) as any;
+
+		function defaultComparer(x: any, y: any) {
+			return x < y ? -1 :
+				x === y ? 0 :
+					1;
+		}
+	}
+
+	// Used for sorted ninq objects.
+	// tslint:disable-next-line
+	private thenBy(comparer: Comparer<T>, descending?: boolean) {
+		const iterable = this.iterable;
+		if (!isSortedIterable(iterable)) {
+			throw new TypeError('Can only be called with sorted iterables');
+		}
+		return iterable.thenBy(comparer, descending);
 	}
 }
 
