@@ -11,6 +11,7 @@ import IntersectionIterator from './operators/intersect';
 import { JoinMatch } from './operators/join';
 import JoinIterable from './operators/join';
 import { SortedIterable, SortingIterable, isSortedIterable } from './operators/sortBy';
+import { ReverseIterable } from './operators/reverse';
 
 /**
  * Provides functionality around iterables.
@@ -86,7 +87,7 @@ export class Ninq<T> implements Iterable<T> {
 	static byKey<T, TKey, TResult>(
 		keySelector: Mapping<T, TKey>,
 		comparer: ComparisonFunc<TKey, TResult>
-	) : ComparisonFunc<T, TResult> {
+	): ComparisonFunc<T, TResult> {
 
 		return (x, y) => {
 			const xKey = keySelector(x),
@@ -1206,6 +1207,50 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
+	 * Generates a sequence of integral numbers within a specified range
+	 *
+	 * @static
+	 * @param {number} count - The number of sequential integers to generate
+	 * @param {number} [start=0] - The value of the first integer in the sequence
+	 * @param {number} [step=1] - The step between each iteration result.
+	 * @returns {Iterable<number>} - An Iterable<number> that contains a range of sequential integral numbers
+	 *
+	 * @memberOf Ninq
+	 */
+	static * range(count: number, start = 0, step = 1) {
+
+		for (let i = start; shouldIterate(i); i += step) {
+			yield i;
+		}
+
+		function shouldIterate(i: number) {
+			return step < 0
+				? i > start - count
+				: i < start + count;
+		}
+	}
+
+	/**
+	 * Generates a sequence that contains one repeated value
+	 *
+	 * @static
+	 * @template T - The type of the value to be repeated in the result sequence
+	 * @param {T} element - The value to be repeated
+	 * @param {number} count - The number of times to repeat the value in the generated sequence
+	 * @returns {Iterable<T>} - An Iterable<T> that contains a repeated value
+	 *
+	 * @memberOf Ninq
+	 */
+	static * repeat<T>(element: T, count: number) {
+		if (count < 0) {
+			throw new Error('count must be greater or equal to zero');
+		}
+		for (let i = 0; i < count; i++) {
+			yield element;
+		}
+	}
+
+	/**
 	 * Applies an accumulator function over a sequence
 	 *
 	 * @static
@@ -1294,6 +1339,32 @@ export class Ninq<T> implements Iterable<T> {
 				this.iterable,
 				seedOrReduc as ReductionFunc<T, TResult>
 			);
+	}
+
+	/**
+	 * Inverts the order of the elements in a sequence
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} iterable - A sequence of values to reverse
+	 * @returns {Iterable<T>} - A sequence whose elements correspond to those of the input sequence in reverse order
+	 *
+	 * @memberOf Ninq
+	 */
+	static reverse<T>(iterable: Iterable<T>): Iterable<T> {
+		return new ReverseIterable<T>(iterable);
+	}
+
+	/**
+	 * Inverts the order of the elements in the sequence
+	 *
+	 * @returns - A sequence whose elements correspond to those of the input sequence in reverse order
+	 *
+	 * @memberOf Ninq
+	 */
+	reverse() {
+		const iterable = Ninq.reverse(this.iterable);
+		return new Ninq<T>(iterable);
 	}
 
 	/**

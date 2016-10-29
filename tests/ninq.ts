@@ -295,4 +295,36 @@ describe('Test Base ninq class', () => {
 	});
 
 
+	describe('range', () => {
+
+		it('zero upwards', () => {
+			const [...result] = Ninq.range(5);
+			expect(result).toEqual([0, 1, 2, 3, 4]);
+		});
+
+
+		it('povided value upwards', () => {
+			const [...result] = Ninq.range(5, 1);
+			expect(result).toEqual([1, 2, 3, 4, 5]);
+		});
+		it('zero value downwards', () => {
+			const [...result] = Ninq.range(5, undefined, -1);
+			expect(result).toEqual([0, -1, -2, -3, -4]);
+		});
+		it('povided value downwards', () => {
+			const [...result] = Ninq.range(5, 1, -1);
+			expect(result).toEqual([1, 0, -1, -2, -3]);
+		});
+	});
+
+
+	describe('repeat', () => {
+
+		it('repeat the value multiple times', () => {
+			const [...result] = Ninq.repeat(null, 3);
+			expect(result).toEqual([null, null, null])
+		});
+
+	});
+
 });

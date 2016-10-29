@@ -81,8 +81,8 @@ function* iterateTree<T>(tree: Node<T> | undefined)
 }
 
 function log(...messages: any[]) {
-	global.console.log.apply(global.console, messages);
-	global.console.log();
+	// global.console.log.apply(global.console, messages);
+	// global.console.log();
 }
 
 function insert<T>({
