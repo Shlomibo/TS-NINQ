@@ -322,7 +322,7 @@ describe('Test Base ninq class', () => {
 
 		it('repeat the value multiple times', () => {
 			const [...result] = Ninq.repeat(null, 3);
-			expect(result).toEqual([null, null, null])
+			expect(result).toEqual([null, null, null]);
 		});
 
 	});
@@ -338,5 +338,47 @@ describe('Test Base ninq class', () => {
 
 	});
 
+
+	describe('single', () => {
+
+		it('empty seqs', () => {
+			const arr = [];
+			expect(Ninq.singleOrDefault(arr, Infinity)).toBe(Infinity);
+			expect(() => Ninq.single(arr)).toThrow();
+		});
+
+		it('single element seqs', () => {
+			const arr = [1];
+			expect(Ninq.singleOrDefault(arr, Infinity)).toBe(1);
+			expect(Ninq.single(arr)).toBe(1);
+		});
+
+		it('throws on multi elments seqs', () => {
+			const arr = [1, 2];
+			expect(() => Ninq.singleOrDefault(arr, Infinity)).toThrow();
+			expect(() => Ninq.single(arr)).toThrow();
+		});
+		it('empty seqs, condition', () => {
+			const arr = [1];
+			expect(Ninq.singleOrDefault(arr, Infinity, predicate)).toBe(Infinity);
+			expect(() => Ninq.single(arr, predicate)).toThrow();
+		});
+
+		it('single element seqs, condition', () => {
+			const arr = [1, 2];
+			expect(Ninq.singleOrDefault(arr, Infinity, predicate)).toBe(2);
+			expect(Ninq.single(arr, predicate)).toBe(2);
+		});
+
+		it('throws on multi elments seqs, condition', () => {
+			const arr = [0, 1, 2];
+			expect(() => Ninq.singleOrDefault(arr, Infinity, predicate)).toThrow();
+			expect(() => Ninq.single(arr, predicate)).toThrow();
+		});
+
+		function predicate(x: number) {
+			return 0 === x % 2;
+		}
+	});
 
 });

@@ -1,5 +1,5 @@
 import ConcatIterable from './operators/concat';
-import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping, SortedCollection } from './types';
+import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
@@ -1533,6 +1533,127 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	sequenceEqual(other: Iterable<T>, equalityComparer?: EqualityComparer<T>): boolean {
 		return Ninq.sequenceEqual(this.iterable, other, equalityComparer);
+	}
+
+	/**
+	 * Returns the only element of a sequence, or a default value if the sequence is empty;
+	 * 	this method throws an exception if there is more than one element in the sequence
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - An Iterable<T> to return the single element of
+	 * @param {T} defVal - An element to return if the sequence contains no elements
+	 * @returns {T} - The single element of the input sequence, or defValue if the sequence contains no elements
+	 *
+	 * @memberOf Ninq
+	 */
+	static singleOrDefault<T>(it: Iterable<T>, defVal: T): T;
+	/**
+	 * Returns the only element of a sequence that satisfies a specified condition or a default value if no such element exists;
+	 * 	this method throws an exception if more than one element satisfies the condition
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it
+	 * @param {T} defVal - An element to return if the sequence contains no elements
+	 * @param {Predicate<T>} predicate - A function to test an element for a condition
+	 * @returns {T} - The single element of the input sequence that satisfies the condition, or defVal if no such element is found
+	 *
+	 * @memberOf Ninq
+	 */
+	static singleOrDefault<T>(it: Iterable<T>, defVal: T, predicate: Predicate<T>): T;
+	static singleOrDefault<T>(it: Iterable<T>, defVal: T, predicate?: Predicate<T>) {
+		if (predicate) {
+			it = Ninq.filter(it, predicate);
+		}
+		let isFirstIteration = true;
+		for (let item of it) {
+			if (!isFirstIteration) {
+				throw new Error('Expected single value');
+			}
+			defVal = item;
+			isFirstIteration = false;
+		}
+		return defVal;
+	}
+
+	/**
+	 * Returns the only element of a sequence, or a default value if the sequence is empty;
+	 * 	this method throws an exception if there is more than one element in the sequence
+	 *
+	 * @param {T} defVal - An element to return if the sequence contains no elements
+	 * @returns {T} - The single element of the input sequence, or defValue if the sequence contains no elements
+	 *
+	 * @memberOf Ninq
+	 */
+	singleOrDefault(defVal: T): T;
+	/**
+	 * Returns the only element of a sequence that satisfies a specified condition or a default value if no such element exists;
+	 * 	this method throws an exception if more than one element satisfies the condition
+	 *
+	 * @param {T} defVal - An element to return if the sequence contains no elements
+	 * @param {Predicate<T>} predicate - A function to test an element for a condition
+	 * @returns {T} - The single element of the input sequence that satisfies the condition, or defVal if no such element is found
+	 *
+	 * @memberOf Ninq
+	 */
+	singleOrDefault(defVal: T, predicate: Predicate<T>): T;
+	singleOrDefault(defVal: T, predicate?: Predicate<T>) {
+		return Ninq.singleOrDefault(this.iterable, predicate as any);
+	}
+
+	/**
+	 * Returns the only element of a sequence, and throws an exception if there is not exactly one element in the sequence
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - An Iterable<T> to return the single element of
+	 * @returns {T} - The single element of the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static single<T>(it: Iterable<T>): T;
+	/**
+	 * Returns the only element of a sequence that satisfies a specified condition,
+	 * 	and throws an exception if more than one such element exists
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - An Iterable<T> to return the single element of
+	 * @param {Predicate<T>} predicate - A function to test an element for a condition
+	 * @returns {T} - The single element of the input sequence that satisfies a condition
+	 *
+	 * @memberOf Ninq
+	 */
+	static single<T>(it: Iterable<T>, predicate: Predicate<T>): T;
+	static single<T>(it: Iterable<T>, predicate?: Predicate<T>) {
+		const result = Ninq.singleOrDefault<T | '\0__ERROR__\0'>(it, '\0__ERROR__\0', predicate as any);
+		if (result === '\0__ERROR__\0') {
+			throw new Error('Empty sequence');
+		}
+		return result;
+	}
+
+	/**
+	 * Returns the only element of a sequence, and throws an exception if there is not exactly one element in the sequence
+	 *
+	 * @returns {T} - The single element of the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	single(): T;
+	/**
+	 * Returns the only element of a sequence that satisfies a specified condition,
+	 * 	and throws an exception if more than one such element exists
+	 *
+	 * @param {Predicate<T>} predicate - A function to test an element for a condition
+	 * @returns {T} - The single element of the input sequence that satisfies a condition
+	 *
+	 * @memberOf Ninq
+	 */
+	single(predicate: Predicate<T>): T;
+	single(predicate?: Predicate<T>) {
+		return Ninq.single(this.iterable);
 	}
 
 	/**
