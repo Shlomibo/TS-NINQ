@@ -15,6 +15,7 @@ import { ReverseIterable } from './operators/reverse';
 import { MappingIterable, MapManyIterable } from './operators/map';
 import { ZipIterable } from './operators/zip';
 import { SkippingIterable } from './operators/skip';
+import { TakeWhileIterable } from './operators/take';
 
 /**
  * Provides functionality around iterables.
@@ -1916,6 +1917,68 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	sum(selector: KeySelector<T, number>) {
 		return Ninq.sum(this.iterable, selector);
+	}
+
+	/**
+	 * - Returns elements from a sequence as long as a specified condition is true
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - A sequence to return elements from
+	 * @param {Predicate<T>} predicate - A function to test each element for a condition
+	 * @returns - An Iterable<T> that contains the elements from the input sequence
+	 * 	that occur before the element at which the test no longer passes
+	 *
+	 * @memberOf Ninq
+	 */
+	static takeWhile<T>(it: Iterable<T>, predicate: Predicate<T>): Iterable<T> {
+		return new TakeWhileIterable(it, predicate);
+	}
+
+	/**
+	 * - Returns elements from a sequence as long as a specified condition is true
+	 *
+	 * @param {Predicate<T>} predicate - A function to test each element for a condition
+	 * @returns - An Iterable<T> that contains the elements from the input sequence
+	 * 	that occur before the element at which the test no longer passes
+	 *
+	 * @memberOf Ninq
+	 */
+	takeWhile(predicate: Predicate<T>) {
+		const iterable = Ninq.takeWhile(this.iterable, predicate);
+		return new Ninq(iterable);
+	}
+
+	/**
+	 * Returns a specified number of contiguous elements from the start of a sequence
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - The sequence to return elements from
+	 * @param {number} count - The number of elements to return
+	 * @returns - An Iterable<T> that contains the specified number of elements from the start of the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static take<T>(it: Iterable<T>, count: number) {
+		if (count < 0) {
+			throw new Error('count must be greater or equal to zero');
+		}
+		return Ninq.takeWhile(it, (_, index) => index < count);
+	}
+
+	/**
+	 * Returns a specified number of contiguous elements from the start of this sequence
+	 *
+	 *
+	 * @param {number} count - The number of elements to return
+	 * @returns - An Iterable<T> that contains the specified number of elements from the start of the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	take(count: number) {
+		const iterable = Ninq.take(this.iterable, count);
+		return new Ninq(iterable);
 	}
 
 	/**

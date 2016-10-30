@@ -6,9 +6,11 @@ export class SkippingIterable<T> implements Iterable<T> {
 	) {
 	}
 	*[Symbol.iterator]() {
-		let i = 0;
+		let i = 0,
+			isSkipping = true;
 		for (let item of this.iterable) {
-			if (!this.predicate(item, i++)) {
+			isSkipping = isSkipping && this.predicate(item, i++);
+			if (!isSkipping) {
 				yield item;
 			}
 		}
