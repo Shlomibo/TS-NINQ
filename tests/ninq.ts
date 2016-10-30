@@ -381,4 +381,14 @@ describe('Test Base ninq class', () => {
 		}
 	});
 
+
+	describe('sum', () => {
+
+		it('calc sum', () => {
+			const arr = [1, 2, 3];
+			expect(Ninq.sum(arr)).toBe(6);
+		});
+
+	});
+
 });

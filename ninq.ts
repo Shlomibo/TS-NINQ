@@ -1873,6 +1873,52 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
+	 * Computes the sum of a sequence of numbers
+	 *
+	 *
+	 * @static
+	 * @param {Iterable<number>} it - A sequence of number values to calculate the sum of
+	 * @returns {number} - The sum of the values in the sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static sum(it: Iterable<number>): number;
+	/**
+	 * Computes the sum of the sequence of number values that are obtained by invoking a transform function
+	 * 	on each element of the input sequence
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - A sequence of values that are used to calculate a sum
+	 * @param {KeySelector<T, number>} selector - A transform function to apply to each element
+	 * @returns - The sum of the projected values
+	 *
+	 * @memberOf Ninq
+	 */
+	static sum<T>(it: Iterable<T>, selector: KeySelector<T, number>): number;
+	static sum<T>(it: Iterable<T>, selector?: KeySelector<T, number>) {
+		const keySelector: KeySelector<T, number> = selector || ((x: any) => x) as any;
+		return Ninq.reduce(
+			it,
+			0,
+			(sum: number, item: T) => sum + keySelector(item)
+		);
+	}
+
+	/**
+	 * Computes the sum of the sequence of number values that are obtained by invoking a transform function
+	 * 	on each element of the input sequence
+	 *
+	 * @param {KeySelector<T, number>} selector - A transform function to apply to each element
+	 * @returns - The sum of the projected values
+	 *
+	 * @memberOf Ninq
+	 */
+	sum(selector: KeySelector<T, number>) {
+		return Ninq.sum(this.iterable, selector);
+	}
+
+	/**
 	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
 	 *
 	 * @static
