@@ -14,6 +14,7 @@ import { SortedIterable, SortingIterable, isSortedIterable } from './operators/s
 import { ReverseIterable } from './operators/reverse';
 import { MappingIterable, MapManyIterable } from './operators/map';
 import { ZipIterable } from './operators/zip';
+import { SkippingIterable } from './operators/skip';
 
 /**
  * Provides functionality around iterables.
@@ -1654,6 +1655,71 @@ export class Ninq<T> implements Iterable<T> {
 	single(predicate: Predicate<T>): T;
 	single(predicate?: Predicate<T>) {
 		return Ninq.single(this.iterable);
+	}
+
+	/**
+	 * Bypasses elements in a sequence as long as a specified condition is true and then returns the remaining elements.
+	 * 	The element's index is used in the logic of the predicate function
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - An Iterable<T> to return elements from
+	 * @param {Predicate<T>} predicate - A function to test each source element for a condition;
+	 * 	the second parameter of the function represents the index of the source element
+	 * @returns - An Iterable<T> that contains the elements from the input sequence starting
+	 * 	at the first element in the linear series that does not pass the test specified by predicate
+	 *
+	 * @memberOf Ninq
+	 */
+	static skipWhile<T>(it: Iterable<T>, predicate: Predicate<T>): Iterable<T> {
+		return new SkippingIterable(it, predicate);
+	}
+
+	/**
+	 * Bypasses elements in a sequence as long as a specified condition is true and then returns the remaining elements.
+	 * 	The element's index is used in the logic of the predicate function
+	 *
+	 * @param {Predicate<T>} predicate - A function to test each source element for a condition;
+	 * 	the second parameter of the function represents the index of the source element
+	 * @returns - An Iterable<T> that contains the elements from the input sequence starting
+	 * 	at the first element in the linear series that does not pass the test specified by predicate
+	 *
+	 * @memberOf Ninq
+	 */
+	skipWhile(predicate: Predicate<T>) {
+		const iterable = Ninq.skipWhile(this.iterable, predicate);
+		return new Ninq(iterable);
+	}
+
+	/**
+	 * Bypasses a specified number of elements in a sequence and then returns the remaining elements
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - An Iterable<T> to return elements from
+	 * @param {number} count - The number of elements to skip before returning the remaining elements
+	 * @returns - An Iterable<T> that contains the elements that occur after the specified index in the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static skip<T>(it: Iterable<T>, count: number) {
+		if (count < 0) {
+			throw new Error('count must be greater or equal to zero');
+		}
+		return Ninq.skipWhile(it, (_, index) => index < count);
+	}
+
+	/**
+	 * Bypasses a specified number of elements in a sequence and then returns the remaining elements
+	 *
+	 * @param {number} count - The number of elements to skip before returning the remaining elements
+	 * @returns - An Iterable<T> that contains the elements that occur after the specified index in the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	skip(count: number) {
+		const iterable = Ninq.skip(this.iterable, count);
+		return new Ninq(iterable);
 	}
 
 	/**
