@@ -11,3 +11,7 @@ export interface SortedCollection<T> extends Iterable<T> {
 	add(...items: T[]): void;
 	addRange(items: T[]): void;
 }
+
+export interface Hash<T> {
+	[key: string]: T;
+}

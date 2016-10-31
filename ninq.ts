@@ -1,5 +1,5 @@
 import ConcatIterable from './operators/concat';
-import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping } from './types';
+import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping, Hash } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
@@ -1979,6 +1979,186 @@ export class Ninq<T> implements Iterable<T> {
 	take(count: number) {
 		const iterable = Ninq.take(this.iterable, count);
 		return new Ninq(iterable);
+	}
+
+	/**
+	 * Creates an array from a Iterable<T>
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - An Iterable<T> to create an array from
+	 * @returns {T[]} - An array that contains the elements from the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static toArray<T>(it: Iterable<T>): T[] {
+		const [...result] = it;
+		return result;
+	}
+
+	/**
+	 * Creates a Map<TKey, T> from an Iterable<T> according to a specified key selector function
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @template TKey - The type of the key returned by keySelector
+	 * @param {Iterable<T>} it - An Iterable<T> to create a Map<TKey, T> from
+	 * @param {KeySelector<T, TKey>} keySelector - A function to extract a key from each element
+	 * @returns {Map<TKey, T>} - A Map<TKey, T> that contains keys and values
+	 *
+	 * @memberOf Ninq
+	 */
+	static toMap<T, TKey>(it: Iterable<T>, keySelector: KeySelector<T, TKey>): Map<TKey, T>;
+	/**
+	 * Creates a Map<TKey, TValue> from an Iterable<T> according to specified key selector and element selector functions
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @template TKey - The type of the key returned by keySelector
+	 * @template TValue - The type of the value returned by valueSelector
+	 * @param {Iterable<T>} it - An Iterable<T> to create a Map<TKey, TValue> from
+	 * @param {KeySelector<T, TKey>} keySelector - A function to extract a key from each element
+	 * @param {KeySelector<T, TValue>} valueSelector - A transform function to produce a result element value from each element
+	 * @returns {Map<TKey, TValue>} - A Map<TKey, TValue> that contains values of type TValue selected from the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static toMap<T, TKey, TValue>(
+		it: Iterable<T>,
+		keySelector: KeySelector<T, TKey>,
+		valueSelector: KeySelector<T, TValue>
+	): Map<TKey, TValue>;
+	static toMap<T, TK>(
+		it: Iterable<T>,
+		keySelector: KeySelector<T, TK>,
+		vs?: KeySelector<T, any>
+	): Map<TK, any> {
+		const valueSelector: KeySelector<T, any> = vs || (x => x);
+		const result = new Map<TK, any>();
+		for (const item of it) {
+			const key = keySelector(item),
+				value = valueSelector(item);
+			result.set(key, value);
+		}
+		return result;
+	}
+
+	/**
+	 * Creates a Map<TKey, T> from an Iterable<T> according to a specified key selector function
+	 *
+	 * @template TKey - The type of the key returned by keySelector
+	 * @param {KeySelector<T, TKey>} keySelector - A function to extract a key from each element
+	 * @returns {Map<TKey, T>} - A Map<TKey, T> that contains keys and values
+	 *
+	 * @memberOf Ninq
+	 */
+	toMap<TKey>(keySelector: KeySelector<T, TKey>): Map<TKey, T>;
+	/**
+	 * Creates a Map<TKey, TValue> from an Iterable<T> according to specified key selector and element selector functions
+	 *
+	 * @template TKey - The type of the key returned by keySelector
+	 * @template TValue - The type of the value returned by valueSelector
+	 * @param {KeySelector<T, TKey>} keySelector - A function to extract a key from each element
+	 * @param {KeySelector<T, TValue>} valueSelector - A transform function to produce a result element value from each element
+	 * @returns {Map<TKey, TValue>} - A Map<TKey, TValue> that contains values of type TValue selected from the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	toMap<TKey, TValue>(
+		keySelector: KeySelector<T, TKey>,
+		valueSelector: KeySelector<T, TValue>
+	): Map<TKey, TValue>;
+	toMap<TK>(
+		keySelector: KeySelector<T, TK>,
+		vs?: KeySelector<T, any>
+	): Map<TK, any> {
+		return Ninq.toMap(this.iterable, keySelector, vs as any);
+	}
+
+	/**
+	 * Creates a Hash<T> from an Iterable<T>
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - An Iterable<T> to create a Hash<T> from
+	 * @param {KeySelector<T, string>} keySelector - A function to extract a key from each element
+	 * @returns {Hash<T>} - A Hash<T> that contains keys and values
+	 *
+	 * @memberOf Ninq
+	 */
+	static toObject<T>(it: Iterable<T>, keySelector: KeySelector<T, string>): Hash<T>;
+	/**
+	 * Creates a Hash<TValue> from an Iterable<T> according to specified element selector function
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @template TValue - The type of the value returned by valueSelector
+	 * @param {Iterable<T>} it - An Iterable<T> to create a Hash<TValue> from
+	 * @param {KeySelector<T, string>} keySelector - A function to extract a key from each element
+	 * @param {KeySelector<T, TValue>} valueSelector - A transform function to produce a result element value from each element
+	 * @returns {Hash<TValue>} - A Hash<TValue> that contains values of type TValue selected from the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	static toObject<T, TValue>(
+		it: Iterable<T>,
+		keySelector: KeySelector<T, string>,
+		valueSelector: KeySelector<T, TValue>
+	): Hash<TValue>;
+	static toObject<T>(
+		it: Iterable<T>,
+		keySelector: KeySelector<T, string>,
+		vs?: KeySelector<T, any>
+	): Hash<any> {
+		const valueSelector: KeySelector<T, any> = vs || (x => x);
+		const result: Hash<any> = {};
+		for (const item of it) {
+			const key = keySelector(item),
+				value = valueSelector(item);
+			result[key] = value;
+		}
+		return result;
+	}
+
+	/**
+	 * Creates a Hash<T> from an Iterable<T>
+	 *
+	 * @param {KeySelector<T, string>} keySelector - A function to extract a key from each element
+	 * @returns {Hash<T>} - A Hash<T> that contains keys and values
+	 *
+	 * @memberOf Ninq
+	 */
+	toObject(keySelector: KeySelector<T, string>): Hash<T>;
+	/**
+	 * Creates a Hash<TValue> from an Iterable<T> according to specified element selector function
+	 *
+	 * @template TValue - The type of the value returned by valueSelector
+	 * @param {KeySelector<T, string>} keySelector - A function to extract a key from each element
+	 * @param {KeySelector<T, TValue>} valueSelector - A transform function to produce a result element value from each element
+	 * @returns {Hash<TValue>} - A Hash<TValue> that contains values of type TValue selected from the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	toObject<TValue>(
+		keySelector: KeySelector<T, string>,
+		valueSelector: KeySelector<T, TValue>
+	): Hash<TValue>;
+	toObject(
+		keySelector: KeySelector<T, string>,
+		vs?: KeySelector<T, any>
+	): Hash<any> {
+		return Ninq.toObject(this.iterable, keySelector, vs as any);
+	}
+
+	/**
+	 * Creates an array from a Iterable<T>
+	 *
+	 * @returns {T[]} - An array that contains the elements from the input sequence
+	 *
+	 * @memberOf Ninq
+	 */
+	toArray(): T[] {
+		return Ninq.toArray(this.iterable);
 	}
 
 	/**
