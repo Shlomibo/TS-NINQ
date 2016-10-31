@@ -1,3 +1,4 @@
+import { Ninq } from './ninq';
 export type ReductionFunc<T, U> = (aggregate: U | undefined, item: T, index: number) => U;
 export type Predicate<T> = (item: T, index: number) => boolean;
 export type KeySelector<T, U> = (item: T) => U;
@@ -15,3 +16,6 @@ export interface SortedCollection<T> extends Iterable<T> {
 export interface Hash<T> {
 	[key: string]: T;
 }
+
+export interface Lookup<K, V> extends Map<K, Iterable<V>> { }
+export interface NinqLookup<K, V> extends Map<K, Ninq<V>> { }

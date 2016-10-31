@@ -1,5 +1,5 @@
 import ConcatIterable from './operators/concat';
-import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping, Hash } from './types';
+import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
@@ -1994,6 +1994,175 @@ export class Ninq<T> implements Iterable<T> {
 	static toArray<T>(it: Iterable<T>): T[] {
 		const [...result] = it;
 		return result;
+	}
+
+	/**
+	 * Creates a Lookup<TKey,T> from an Iterable<T> according to a specified key selector function
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @template TKey - The type of the key returned by keySelector
+	 * @param {Iterable<T>} it - The Iterable<T> to create a Lookup<TKey, T> from
+	 * @param {KeySelector<T, TKey>} keySelector - A function to extract a key from each element
+	 * @returns {Lookup<TKey, T>} - A Lookup<TKey, T> that contains keys and values
+	 *
+	 * @memberOf Ninq
+	 */
+	static toLookup<T, TKey>(it: Iterable<T>, keySelector: KeySelector<T, TKey>): Lookup<TKey, T>;
+	/**
+	 * Creates a Lookup<TKey, TValue> from an Iterable<T> according to specified key selector and element selector functions
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @template TKey - The type of the key returned by keySelector
+	 * @template TValue
+	 * @param {Iterable<T>} it - The Iterable<T> to create a Lookup<TKey, T> from
+	 * @param {KeySelector<T, TKey>} keySelector - A function to extract a key from each element
+	 * @param {KeySelector<T, TValue>} valueSelector - A transform function to produce a result element value from each element
+	 * @returns {Lookup<TKey, TValue>} - A Lookup<TKey, TV> that contains keys and values
+	 *
+	 * @memberOf Ninq
+	 */
+	static toLookup<T, TKey, TValue>(
+		it: Iterable<T>,
+		keySelector: KeySelector<T, TKey>,
+		valueSelector: KeySelector<T, TValue>
+	): Lookup<TKey, TValue>;
+	static toLookup<T, TKey>(
+		it: Iterable<T>,
+		keySelector: KeySelector<T, TKey>,
+		vs?: KeySelector<T, any>
+	): Lookup<TKey, any> {
+		const valueSelector = vs || (x => x);
+		const result = new Map<TKey, Iterable<any>>();
+		for (const item of it) {
+			const key = keySelector(item),
+				value = valueSelector(item),
+				list = result.get(key);
+			if (!list) {
+				result.set(key, [value]);
+			}
+			else {
+				(list as any[]).push(value);
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Creates a Lookup<TKey,T> from an Iterable<T> according to a specified key selector function
+	 *
+	 * @template TKey - The type of the key returned by keySelector
+	 * @param {KeySelector<T, TKey>} keySelector - A function to extract a key from each element
+	 * @returns {NinqLookup<TKey, T>} - A NinqLookup<TKey, T> that contains keys and values
+	 *
+	 * @memberOf Ninq
+	 */
+	toLookup<TKey>(keySelector: KeySelector<T, TKey>): NinqLookup<TKey, T>;
+	/**
+	 * Creates a Lookup<TKey, TValue> from an Iterable<T> according to specified key selector and element selector functions
+	 *
+	 * @template TKey - The type of the key returned by keySelector
+	 * @template TValue - The type of the value returned by valueSelector
+	 * @param {KeySelector<T, TKey>} keySelector - A function to extract a key from each element
+	 * @param {KeySelector<T, TValue>} valueSelector - A transform function to produce a result element value from each element
+	 * @returns {NinqLookup<TKey, TValue>} - A NinqLookup<TKey, TValue> that contains keys and values
+	 *
+	 * @memberOf Ninq
+	 */
+	toLookup<TKey, TValue>(
+		keySelector: KeySelector<T, TKey>,
+		valueSelector: KeySelector<T, TValue>
+	): NinqLookup<TKey, TValue>;
+	toLookup<TKey>(
+		keySelector: KeySelector<T, TKey>,
+		vs?: KeySelector<T, any>
+	): NinqLookup<TKey, any> {
+		const result = Ninq.toLookup(this.iterable, keySelector, vs as any);
+		for (const [key, value] of result.entries()) {
+			result.set(key, new Ninq(value));
+		}
+		return  result as any;
+	}
+
+	/**
+	 * Creates a Hash<Iterable<T>> from an Iterable<T> according to a specified key selector function
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Iterable<T>} it - The Iterable<T> to create a Hash<Iterable<T>> from
+	 * @param {KeySelector<T, string>} keySelector - A function to extract a key from each element
+	 * @returns {Hash<Iterable<T>>} - A Hash<Iterable<T>> that contains keys and values
+	 *
+	 * @memberOf Ninq
+	 */
+	static toLookupObject<T>(it: Iterable<T>, keySelector: KeySelector<T, string>): Hash<Iterable<T>>;
+	/**
+	 * Creates a Hash<Iterable<TValue>> from an Iterable<T> according to specified key selector and element selector functions
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @template TValue - The type of the value returned by valueSelector
+	 * @param {Iterable<T>} it - The Iterable<T> to create a Hash<Iterable<T>> from
+	 * @param {KeySelector<T, string>} keySelector - A function to extract a key from each element
+	 * @param {KeySelector<T, TValue>} valueSelector - A transform function to produce a result element value from each element
+	 * @returns {Hash<Iterable<TValue>>} - A Hash<Iterable<TValue>> that contains keys and values
+	 *
+	 * @memberOf Ninq
+	 */
+	static toLookupObject<T, TValue>(
+		it: Iterable<T>,
+		keySelector: KeySelector<T, string>,
+		valueSelector: KeySelector<T, TValue>
+	): Hash<Iterable<TValue>>;
+	static toLookupObject<T>(
+		it: Iterable<T>,
+		keySelector: KeySelector<T, string>,
+		vs?: KeySelector<T, any>
+	): Hash<Iterable<any>> {
+		const valueSelector = vs || (x => x);
+		const result: Hash<Iterable<any>> = {};
+		for (const item of it) {
+			const key = keySelector(item),
+				value = valueSelector(item),
+				list = (result[key] as any[]) || [];
+			list.push(value);
+			result[key] = list;
+		}
+		return result;
+	}
+
+	/**
+	 * Creates a Hash<Iterable<T>> from an Iterable<T> according to a specified key selector function
+	 *
+	 * @param {KeySelector<T, string>} keySelector - A function to extract a key from each element
+	 * @returns {Hash<Iterable<T>>} - A Hash<Iterable<T>> that contains keys and values
+	 *
+	 * @memberOf Ninq
+	 */
+	toLookupObject(keySelector: KeySelector<T, string>): Hash<Iterable<T>>;
+	/**
+	 * Creates a Hash<Iterable<TValue>> from an Iterable<T> according to specified key selector and element selector functions
+	 *
+	 * @template TValue - The type of the value returned by valueSelector
+	 * @param {KeySelector<T, string>} keySelector - A function to extract a key from each element
+	 * @param {KeySelector<T, TValue>} valueSelector - A transform function to produce a result element value from each element
+	 * @returns {Hash<Ninq<TValue>>} - A Hash<Ninq<TValue>> that contains keys and values
+	 *
+	 * @memberOf Ninq
+	 */
+	toLookupObject<TValue>(
+		keySelector: KeySelector<T, string>,
+		valueSelector: KeySelector<T, TValue>
+	): Hash<Ninq<TValue>>;
+	toLookupObject(
+		keySelector: KeySelector<T, string>,
+		vs?: KeySelector<T, any>
+	): Hash<Ninq<any>> {
+		const obj = Ninq.toLookupObject(this.iterable, keySelector, vs as any);
+		Object.keys(obj)
+			.forEach(key => obj[key] = new Ninq(obj[key]));
+		return obj as any;
 	}
 
 	/**
