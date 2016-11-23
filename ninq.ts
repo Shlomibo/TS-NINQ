@@ -17,6 +17,7 @@ import { ZipIterable } from './operators/zip';
 import { SkippingIterable } from './operators/skip';
 import { TakeWhileIterable } from './operators/take';
 import { UnionIterable } from './operators/union';
+import { adaptTo } from './modules/object-adapter';
 
 /**
  * Provides functionality around iterables.
@@ -2241,8 +2242,9 @@ export class Ninq<T> implements Iterable<T> {
 	toMap<TK>(
 		keySelector: KeySelector<T, TK>,
 		vs?: KeySelector<T, any>
-	): Map<TK, any> {
-		return Ninq.toMap(this.iterable, keySelector, vs as any);
+	): Ninq<any> & Map<TK, any> {
+		const map = Ninq.toMap(this.iterable, keySelector, vs as any);
+		return adaptTo(new Ninq(map), map);
 	}
 
 	/**
