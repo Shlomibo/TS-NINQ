@@ -7,6 +7,7 @@ export type EqualityComparer<T> = (left: T, right: T) => boolean;
 export type Comparable = number | string;
 export type Comparer<T> = (left: T, right: T) => number;
 export type ComparisonFunc<T, R> = (x: T, y: T) => R;
+export type Loopable<T> = Iterable<T> | ArrayLike<T>;
 
 export interface SortedCollection<T> extends Iterable<T> {
 	add(...items: T[]): void;
