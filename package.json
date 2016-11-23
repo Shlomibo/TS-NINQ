@@ -14,6 +14,8 @@
   "author": "Shlomi Borovitz",
   "license": "ISC",
   "devDependencies": {
+    "@types/jasmine": "^2.5.38",
+    "@types/node": "^6.0.50",
     "jasmine": "2.5.2",
     "typescript": "2.0.10"
   }
