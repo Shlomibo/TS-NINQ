@@ -1,5 +1,5 @@
 import ConcatIterable from './operators/concat';
-import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup, Loopable } from './types';
+import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup, Loopable, Generator } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
@@ -131,7 +131,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static concat<T>(...iterables: Loopable<T>[]): Iterable<T>;
+	static concat<T>(first: Loopable<T>, ...iterables: Loopable<T>[]): Iterable<T>;
 	/**
 	 * Return a concatination of this sequence and the provided sequences.
 	 *
@@ -143,11 +143,18 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static concat<T>(iterables: Loopable<Loopable<T>>): Iterable<T>;
-	static concat<T>(...iterables: (Loopable<T> | Loopable<Loopable<T>>)[]) {
-		const realIterables = Ninq.isLoopableOfLoopables<T>(iterables[0])
-			? iterables[0] as Loopable<Loopable<T>>
-			: iterables as Loopable<Loopable<T>>;
-
+	static concat<T>(
+		firstOrIterables: Loopable<T> | Loopable<Loopable<T>>,
+		...others: (Loopable<T> | Loopable<Loopable<T>>)[]
+	) {
+		let realIterables: Loopable<Loopable<T>>;
+		if (Ninq.isLoopableOfLoopables<T>(firstOrIterables)) {
+			realIterables = firstOrIterables;
+		}
+		else {
+			others.unshift(firstOrIterables);
+			realIterables = others as any;
+		}
 		return new ConcatIterable(Ninq.map(realIterables, ArrayLikeIterable.toIterable));
 	}
 
@@ -199,12 +206,13 @@ export class Ninq<T> implements Iterable<T> {
 	concat(iterables: Loopable<Loopable<T>>): Ninq<T>;
 	concat(...iterables: (Loopable<T> | Loopable<Loopable<T>>)[]) {
 		const realLoopables = Ninq.isLoopableOfLoopables<T>(iterables[0])
-			? iterables[0] as Loopable<Iterable<T>>
-			: iterables as Loopable<Iterable<T>>;
-		const [...loopablesArray] = ArrayLikeIterable.toIterable(realLoopables);
-		loopablesArray.unshift(this);
+			? iterables[0] as Loopable<Loopable<T>>
+			: iterables as Loopable<Loopable<T>>;
 		return new Ninq(
-			Ninq.concat<T>(loopablesArray)
+			Ninq.concat<T>(
+				this.iterable,
+				...ArrayLikeIterable.toIterable(realLoopables)
+			)
 		);
 	}
 
@@ -435,6 +443,55 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	static *empty<T>(): Iterable<T> {
 		;
+	}
+
+	/**
+	 * Converts an ES6 generator into an async function that returns a promise.
+	 *
+	 * @static
+	 * @param {Generator<Promise<any>>} generator - The generator to convert
+	 * @returns {(...args: any[]) => Promise<any>} - An async function.
+	 *
+	 * @memberOf Ninq
+	 */
+	static esync(generator: Generator<Promise<any>>): (...args: any[]) => Promise<any> {
+		return (...args) => {
+			const it = generator(...args)[Symbol.iterator]();
+
+			return Promise.resolve()
+				.then(() => iterate(it.next()));
+
+			function iterate(iterationResult: IteratorResult<Promise<any>>)
+				: Promise<any> {
+
+				const { done, value: resultOrPromise } = iterationResult;
+
+				if (done) {
+					return resultOrPromise;
+				}
+				else {
+					return resultOrPromise.then(
+						result => iterate(it.next(result)),
+						err => iterate(it.throw!(err))
+					);
+				}
+			}
+		};
+	}
+
+	/**
+	 * Converts an ES6 generator into an async function that returns a promise, then
+	 * execute it with the provided params.
+	 *
+	 * @static
+	 * @param {Generator<Promise<any>>} generator - The generator to convert
+	 * @param {...any[]} args - Arguments for the async function.
+	 * @returns {Promise<any>} - Returns a promise of the async function.
+	 *
+	 * @memberOf Ninq
+	 */
+	static runEsync(generator: Generator<Promise<any>>, ...args: any[]): Promise<any> {
+		return Ninq.esync(generator)(...args);
 	}
 
 	/**

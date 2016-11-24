@@ -1,6 +1,9 @@
 import { Loopable } from '../types';
 export default class ArrayLikeIterable<T> implements Iterable<T> {
-	constructor(private readonly arrayLike: ArrayLike<T>) {
+	constructor(
+		private readonly arrayLike: ArrayLike<T>,
+		readonly continious = false
+	) {
 		if (!arrayLike ||
 			(typeof arrayLike.length !== 'number') ||
 			(arrayLike.length < 0)) {
@@ -9,8 +12,13 @@ export default class ArrayLikeIterable<T> implements Iterable<T> {
 	}
 
 	*[Symbol.iterator]() {
+		const keys = new Set(Object.keys(this.arrayLike));
 		for (let i = 0; i < this.arrayLike.length; i++) {
-			yield this.arrayLike[i];
+			if (this.continious ||
+				keys.has(i.toString())) {
+
+				yield this.arrayLike[i];
+			}
 		}
 	}
 
