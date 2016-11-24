@@ -49,10 +49,8 @@
         ],
         "curly": true,
         "forin": true,
-        "no-duplicate-key": true,
         "no-empty": true,
         "no-require-imports": true,
-        "no-unreachable": true,
         "no-unused-expression": false,
         "no-unused-variable": [
             true

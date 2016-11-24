@@ -1,4 +1,4 @@
-import { Comparer } from '../types';
+import { Comparer, Loopable } from '../types';
 import { TwoThreeTree } from '../modules/2-3-tree';
 
 /**
@@ -93,7 +93,7 @@ class SubSort<T> extends SortingIterable<T> {
 	}
 }
 
-export function isSortedIterable<T>(iterable: Iterable<T>)
+export function isSortedIterable<T>(iterable: Loopable<T>)
 	: iterable is SortedIterable<T> {
 
 	return typeof (iterable as any).thenBy === 'function';

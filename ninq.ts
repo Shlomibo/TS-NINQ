@@ -1,5 +1,5 @@
 import ConcatIterable from './operators/concat';
-import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup } from './types';
+import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup, Loopable, Generator } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
@@ -18,6 +18,8 @@ import { SkippingIterable } from './operators/skip';
 import { TakeWhileIterable } from './operators/take';
 import { UnionIterable } from './operators/union';
 import { adaptTo } from './modules/object-adapter';
+import ArrayLikeIterable from './modules/array-like-iterable';
+import { isIterable } from './modules/array-like-iterable';
 
 /**
  * Provides functionality around iterables.
@@ -28,13 +30,12 @@ import { adaptTo } from './modules/object-adapter';
  * @template T
  */
 export class Ninq<T> implements Iterable<T> {
-	constructor(private readonly iterable: Iterable<T>) {
+	constructor(private readonly iterable: Loopable<T>) {
 	}
 
 	*[Symbol.iterator]() {
-		for (let item of this.iterable) {
-			yield item;
-		}
+		const it = ArrayLikeIterable.toIterable(this.iterable);
+		yield* it;
 	}
 
 	/**
@@ -43,13 +44,16 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} it - Iterable to calculate avg for
-	 * @param {Selector<T, number>} selector - A transform function to apply to each element
-	 * @returns
+	 * @param {(Iterable<T> | ArrayLike<T>)} it - Iterable to calculate avg for
+	 * @param {KeySelector<T, number>} selector - A transform function to apply to each element
+	 * @returns {(number | undefined)}
 	 *
 	 * @memberOf Ninq
 	 */
-	static average<T>(it: Iterable<T>, selector: KeySelector<T, number>) {
+	static average<T>(it: Loopable<T>, selector: KeySelector<T, number>)
+		: number | undefined {
+
+		it = ArrayLikeIterable.toIterable(it);
 		return Ninq.reduce<T, number>(
 			it,
 			(prev, item, index) => {
@@ -122,44 +126,64 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {...Iterable<T>[]} iterables - Iterable to concat to this sequence.
+	 * @param {...Loopable<T>[]} iterables - Iterable to concat to this sequence.
 	 * @returns {Iterable<T>} A concatination of this sequence and the provided sequences
 	 *
 	 * @memberOf Ninq
 	 */
-	static concat<T>(...iterables: Iterable<T>[]): Iterable<T>;
+	static concat<T>(first: Loopable<T>, ...iterables: Loopable<T>[]): Iterable<T>;
 	/**
 	 * Return a concatination of this sequence and the provided sequences.
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<Iterable<T>>} iterables - Iterable to concat to this sequence.
+	 * @param {Loopable<Loopable<T>>} iterables - Iterable to concat to this sequence.
 	 * @returns {Iterable<T>} A concatination of this sequence and the provided sequences
 	 *
 	 * @memberOf Ninq
 	 */
-	static concat<T>(iterables: Iterable<Iterable<T>>): Iterable<T>;
-	static concat<T>(...iterables: (Iterable<T> | Iterable<Iterable<T>>)[]) {
-		const realIterables = Ninq.isIterableOfIterables<T>(iterables[0])
-			? iterables[0] as Iterable<Iterable<T>>
-			: iterables as Iterable<Iterable<T>>;
-		return new ConcatIterable(realIterables);
-	}
-	private static isIterableOfIterables<T>(iterable?: Iterable<T> | Iterable<Iterable<T>>)
-		: iterable is Iterable<Iterable<T>> {
-
-		const iterator = iterable && iterable[Symbol.iterator](),
-			firstIter = iterator && iterator.next();
-		try {
-			return !!firstIter &&
-				!firstIter.done &&
-				firstIter.value &&
-				typeof (firstIter.value as any)[Symbol.iterator] === 'function';
+	static concat<T>(iterables: Loopable<Loopable<T>>): Iterable<T>;
+	static concat<T>(
+		firstOrIterables: Loopable<T> | Loopable<Loopable<T>>,
+		...others: (Loopable<T> | Loopable<Loopable<T>>)[]
+	) {
+		let realIterables: Loopable<Loopable<T>>;
+		if (Ninq.isLoopableOfLoopables<T>(firstOrIterables)) {
+			realIterables = firstOrIterables;
 		}
-		finally {
-			iterator &&
-				iterator.return &&
-				iterator.return(undefined);
+		else {
+			others.unshift(firstOrIterables);
+			realIterables = others as any;
+		}
+		return new ConcatIterable(Ninq.map(realIterables, ArrayLikeIterable.toIterable));
+	}
+
+	private static isLoopableOfLoopables<T>(iterable?: Loopable<T> | Loopable<Loopable<T>>)
+		: iterable is Loopable<Loopable<T>> {
+
+		if (iterable && !isIterable(iterable)) {
+			return !!iterable[0] &&
+				isLoopable(iterable[0]);
+		}
+		else if (iterable) {
+			const iterator = iterable[Symbol.iterator](),
+				{value, done} = iterator.next();
+			try {
+				return !done &&
+					isLoopable(value);
+			}
+			finally {
+				iterator &&
+					iterator.return &&
+					iterator.return(undefined);
+			}
+		}
+		return false;
+
+		function isLoopable(value: any): boolean {
+			return value &&
+				(typeof (value as any)[Symbol.iterator] === 'function' ||
+					(value as any).length >= 0);
 		}
 	}
 	/**
@@ -170,7 +194,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	concat(...iterables: Iterable<T>[]): Ninq<T>;
+	concat(...iterables: Loopable<T>[]): Ninq<T>;
 	/**
 	 * Return a concatination of this sequence and the provided sequences.
 	 *
@@ -179,14 +203,16 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	concat(iterables: Iterable<Iterable<T>>): Ninq<T>;
-	concat(...iterables: (Iterable<T> | Iterable<Iterable<T>>)[]) {
-		const [...realIterables] = Ninq.isIterableOfIterables<T>(iterables[0])
-			? iterables[0] as Iterable<Iterable<T>>
-			: iterables as Iterable<Iterable<T>>;
-		realIterables.unshift(this);
+	concat(iterables: Loopable<Loopable<T>>): Ninq<T>;
+	concat(...iterables: (Loopable<T> | Loopable<Loopable<T>>)[]) {
+		const realLoopables = Ninq.isLoopableOfLoopables<T>(iterables[0])
+			? iterables[0] as Loopable<Loopable<T>>
+			: iterables as Loopable<Loopable<T>>;
 		return new Ninq(
-			Ninq.concat<T>(realIterables)
+			Ninq.concat<T>(
+				this.iterable,
+				...ArrayLikeIterable.toIterable(realLoopables)
+			)
 		);
 	}
 
@@ -195,27 +221,33 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {Loopable<T>} it - Iterable to calculate avg for
 	 * @returns {number} - The number of elements in the input sequence
 	 *
 	 * @memberOf Ninq
 	 */
-	static count<T>(it: Iterable<T>): number;
+	static count<T>(it: Loopable<T>): number;
 	/**
 	 * Returns a number that represents how many elements in the specified sequence satisfy a condition
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {Loopable<T>} it - Iterable to calculate avg for
 	 * @param {Predicate<T>} predicate - A function to test each element for a condition
 	 * @returns {number} - A number that represents how many elements in the sequence satisfy the condition in the predicate function
 	 *
 	 * @memberOf Ninq
 	 */
-	static count<T>(it: Iterable<T>, predicate: Predicate<T>): number;
-	static count<T>(it: Iterable<T>, predicate?: Predicate<T>) {
+	static count<T>(it: Loopable<T>, predicate: Predicate<T>): number;
+	static count<T>(it: Loopable<T>, predicate?: Predicate<T>) {
 		let result = 0,
 			index = 0;
+		if (!isIterable(it)) {
+			if (!predicate) {
+				return it.length;
+			}
+			it = ArrayLikeIterable.toIterable(it);
+		}
 		predicate = predicate || (x => true);
 		for (let item of it) {
 			if (predicate(item, index)) {
@@ -245,7 +277,7 @@ export class Ninq<T> implements Iterable<T> {
 	count(predicate?: Predicate<T>) {
 		return typeof predicate === 'function'
 			? Ninq.count(this.iterable, predicate)
-			: Ninq.count(this);
+			: Ninq.count(this.iterable);
 	}
 
 	private static $default<T>(x: T | undefined, defVal: T) {
@@ -259,15 +291,15 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {Loopable<T>} it - Iterable to calculate avg for
 	 * @param {T} defValue - The value to return if the sequence is empty
 	 * @returns A sequence that contains defaultValue if source is empty; otherwise, source
 	 *
 	 * @memberOf Ninq
 	 */
-	static defaultIfEmpty<T>(it: Iterable<T>, defValue: T) {
+	static defaultIfEmpty<T>(it: Loopable<T>, defValue: T): Iterable<T> {
 		return Ninq.some(it)
-			? it
+			? ArrayLikeIterable.toIterable(it)
 			: [defValue];
 	}
 	/**
@@ -289,12 +321,12 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {Loopable<T>} it - Iterable to calculate avg for
 	 * @returns {Set<T>} A Set<T> that contains distinct elements from the source sequence
 	 *
 	 * @memberOf Ninq
 	 */
-	static distinct<T>(it: Iterable<T>): Set<T>;
+	static distinct<T>(it: Loopable<T>): Set<T>;
 	/**
 	 * Returns distinct elements from a sequence by using a specified IEqualityComparer<T> to compare values
 	 *
@@ -306,8 +338,9 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static distinct<T>(it: Iterable<T>, comparer: EqualityComparer<T>): Iterable<T>;
-	static distinct<T>(it: Iterable<T>, comparer?: EqualityComparer<T>) {
+	static distinct<T>(it: Loopable<T>, comparer: EqualityComparer<T>): Iterable<T>;
+	static distinct<T>(it: Loopable<T>, comparer?: EqualityComparer<T>) {
+		it = ArrayLikeIterable.toIterable(it);
 		return typeof comparer === 'function'
 			? new DistinctIterable(it, comparer)
 			: new Set(it);
@@ -323,7 +356,7 @@ export class Ninq<T> implements Iterable<T> {
 	distinct(comparer?: EqualityComparer<T>) {
 		const iterable = typeof comparer === 'function'
 			? Ninq.distinct(this.iterable, comparer)
-			: Ninq.distinct(this);
+			: Ninq.distinct(this.iterable);
 		return new Ninq(iterable);
 	}
 
@@ -332,7 +365,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {Loopable<T>} it - Iterable to calculate avg for
 	 * @param {number} index The zero-based index of the element to retrieve
 	 * @param {T} defValue The value to return if index is out of range
 	 * @returns default(TSource) if the index is outside the bounds of the source sequence;
@@ -340,8 +373,14 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static elementAtOrDefault<T>(it: Iterable<T>, index: number, defValue: T) {
+	static elementAtOrDefault<T>(it: Loopable<T>, index: number, defValue: T) {
 		let i = 0;
+		if (!isIterable(it)) {
+			return it.length <= index
+				? defValue
+				: it[index];
+		}
+
 		for (let item of it) {
 			if (i++ === index) {
 				return item;
@@ -354,13 +393,13 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {Loopable<T>} it - Iterable to calculate avg for
 	 * @param {number} index The zero-based index of the element to retrieve
 	 * @returns The element at the specified position in the source sequence
 	 *
 	 * @memberOf Ninq
 	 */
-	static elementAt<T>(it: Iterable<T>, index: number) {
+	static elementAt<T>(it: Loopable<T>, index: number) {
 		const result = Ninq.elementAtOrDefault<T | '\0___ERR___\0'>(it, index, '\0___ERR___\0');
 		if (result === '\0___ERR___\0') {
 			throw new Error('Could not find element');
@@ -407,33 +446,83 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
+	 * Converts an ES6 generator into an async function that returns a promise.
+	 *
+	 * @static
+	 * @param {Generator<Promise<any>>} generator - The generator to convert
+	 * @returns {(...args: any[]) => Promise<any>} - An async function.
+	 *
+	 * @memberOf Ninq
+	 */
+	static esync(generator: Generator<Promise<any>>): (...args: any[]) => Promise<any> {
+		return (...args) => {
+			const it = generator(...args)[Symbol.iterator]();
+
+			return Promise.resolve()
+				.then(() => iterate(it.next()));
+
+			function iterate(iterationResult: IteratorResult<Promise<any>>)
+				: Promise<any> {
+
+				const { done, value: resultOrPromise } = iterationResult;
+
+				if (done) {
+					return resultOrPromise;
+				}
+				else {
+					return resultOrPromise.then(
+						result => iterate(it.next(result)),
+						err => iterate(it.throw!(err))
+					);
+				}
+			}
+		};
+	}
+
+	/**
+	 * Converts an ES6 generator into an async function that returns a promise, then
+	 * execute it with the provided params.
+	 *
+	 * @static
+	 * @param {Generator<Promise<any>>} generator - The generator to convert
+	 * @param {...any[]} args - Arguments for the async function.
+	 * @returns {Promise<any>} - Returns a promise of the async function.
+	 *
+	 * @memberOf Ninq
+	 */
+	static runEsync(generator: Generator<Promise<any>>, ...args: any[]): Promise<any> {
+		return Ninq.esync(generator)(...args);
+	}
+
+	/**
 	 * Produces the set difference of two sequences by using the specified IEqualityComparer<T> to compare values
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} left - An Iterable<T> whose elements that are not also in second will be returned
-	 * @param {Iterable<T>} right - An Iterable<T> whose elements that also occur in the first sequence
+	 * @param {Loopable<T>} left - An Iterable<T> whose elements that are not also in second will be returned
+	 * @param {Loopable<T>} right - An Iterable<T> whose elements that also occur in the first sequence
 	 * 	will cause those elements to be removed from the returned sequence
 	 * @param {EqualityComparer<T>} [comparer] - A comparer to compare values
 	 * @returns A sequence that contains the set difference of the elements of two sequences
 	 *
 	 * @memberOf Ninq
 	 */
-	static except<T>(left: Iterable<T>, right: Iterable<T>, comparer?: EqualityComparer<T>)
+	static except<T>(left: Loopable<T>, right: Loopable<T>, comparer?: EqualityComparer<T>)
 		: Iterable<T> {
+		[left, right] = [left, right].map(ArrayLikeIterable.toIterable);
 		return new ExceptIterable(left, right, comparer);
 	}
 	/**
 	 * Produces the set difference of two sequences by using the specified IEqualityComparer<T> to compare values
 	 *
-	 * @param {Iterable<T>} other - An Iterable<T> whose elements that also occur in the first sequence
+	 * @param {Loopable<T>} other - An Iterable<T> whose elements that also occur in the first sequence
 	 * 	will cause those elements to be removed from the returned sequence
 	 * @param {EqualityComparer<T>} [comparer] - A comparer to compare values
 	 * @returns A sequence that contains the set difference of the elements of two sequences
 	 *
 	 * @memberOf Ninq
 	 */
-	except(other: Iterable<T>, comparer?: EqualityComparer<T>) {
+	except(other: Loopable<T>, comparer?: EqualityComparer<T>) {
 		return new Ninq(Ninq.except(this.iterable, other, comparer));
 	}
 
@@ -442,14 +531,14 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {Loopable<T>} it - Iterable to calculate avg for
 	 * @param {T} defValue
 	 * @param {Predicate<T>} [predicate] - A function to test each element for a condition
 	 * @returns defValue if source is empty; otherwise, the first element in source
 	 *
 	 * @memberOf Ninq
 	 */
-	static firstOrDefault<T>(it: Iterable<T>, defValue: T, predicate?: Predicate<T>): T {
+	static firstOrDefault<T>(it: Loopable<T>, defValue: T, predicate?: Predicate<T>): T {
 		if (typeof predicate === 'function') {
 			return Ninq.firstOrDefault(Ninq.filter(it, predicate), defValue);
 		}
@@ -460,13 +549,13 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {Loopable<T>} it - Iterable to calculate avg for
 	 * @param {Predicate<T>} [predicate] - A function to test each element for a condition
 	 * @returns The first element in the sequence that passes the test in the specified predicate function
 	 *
 	 * @memberOf Ninq
 	 */
-	static first<T>(it: Iterable<T>, predicate?: Predicate<T>) {
+	static first<T>(it: Loopable<T>, predicate?: Predicate<T>) {
 		const result = Ninq.firstOrDefault<T | '\0__ERR__\0'>(it, '\0__ERR__\0', predicate);
 		if (result === '\0__ERR__\0') {
 			throw new RangeError('Iterable is emprty');
@@ -502,16 +591,19 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T
-	 * @param {Iterable<T>} it - An Iterable<T> to filter
+	 * @param {Loopable<T>} it - An Iterable<T> to filter
 	 * @param {Predicate<T>} predicate - A function to test each element for a condition.
 	 * @returns {Iterable<T>} - An Iterable<T> that contains elements from the input sequence that satisfy the condition
 	 *
 	 * @memberOf Ninq
 	 */
-	static filter<T>(it: Iterable<T>, predicate: Predicate<T>)
+	static filter<T>(it: Loopable<T>, predicate: Predicate<T>)
 		: Iterable<T> {
 
-		return new FilterIterable(it, predicate);
+		return new FilterIterable(
+			ArrayLikeIterable.toIterable(it),
+			predicate
+		);
 	}
 	/**
 	 * Filters the sequence of values based on a predicate
@@ -531,7 +623,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {Loopable<T>} it - Iterable to calculate avg for
 	 * @param {Predicate<T>} predicate - A function to test each element for a condition
 	 * @returns true if every element of the source sequence passes the test in the specified predicate,
 	 * or if the sequence is empty; otherwise, false
@@ -539,11 +631,12 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static every<T>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		predicate: Predicate<T>
 	) {
 		let result = true;
 		let i = 0;
+		it = ArrayLikeIterable.toIterable(it);
 		for (let item of it) {
 			result = predicate(item, i);
 			if (!result) {
@@ -573,7 +666,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @static
 	 * @template T - The type of the elements of the iterable
 	 * @template TKey - The type of the key returned by keySelector
-	 * @param {Iterable<T>} it - An Iterable<T> whose elements to group
+	 * @param {Loopable<T>} it - An Iterable<T> whose elements to group
 	 * @param {Selector<T, TKey>} keySelector - A function to extract the key for each element
 	 * @param {EqualityComparer<TKey>} [comparer] - A comparer to compare keys
 	 * @returns {Iterable<Grouping<T, TKey>>} - An Iterable<Grouping<T, TKey>> where each Grouping<T, TKey>
@@ -582,7 +675,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static groupBy<T, TKey>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		keySelector: KeySelector<T, TKey>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<Grouping<T, TKey>>;
@@ -594,7 +687,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @template T - The type of the elements of the iterable
 	 * @template TKey - The type of the key returned by keySelector
 	 * @template TResult - The type of the elements in the result
-	 * @param {Iterable<T>} it - An Iterable<T> whose elements to group
+	 * @param {Loopable<T>} it - An Iterable<T> whose elements to group
 	 * @param {Selector<T, TKey>} keySelector - A function to extract the key for each element
 	 * @param {Selector<T, TResult>} elementSelector - A function to map each source element to an element in the result
 	 * @param {EqualityComparer<TKey>} [comparer] - A comparer to compare keys
@@ -604,13 +697,13 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static groupBy<T, TKey, TResult>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		keySelector: KeySelector<T, TKey>,
 		elementSelector: KeySelector<T, TResult>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<Grouping<TResult, TKey>>;
 	static groupBy<T, TKey, TResult>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		keySelector: KeySelector<T, TKey>,
 		selectorOrComparer: KeySelector<T, TResult> | EqualityComparer<TKey> | undefined,
 		comparer?: EqualityComparer<TKey>
@@ -622,6 +715,8 @@ export class Ninq<T> implements Iterable<T> {
 		if (!selectorOrComparer) {
 			selectorOrComparer = (x => x as any) as KeySelector<T, TResult>;
 		}
+
+		it = ArrayLikeIterable.toIterable(it);
 		return new GroupingIterable<T, TKey, TResult>(
 			it,
 			keySelector,
@@ -693,8 +788,8 @@ export class Ninq<T> implements Iterable<T> {
 	 * @template TOuner
 	 * @template TInner
 	 * @template TKey
-	 * @param {Iterable<TOuner>} outer - The first sequence to join
-	 * @param {Iterable<TInner>} inner - The sequence to join to the first sequence
+	 * @param {Loopable<TOuner>} outer - The first sequence to join
+	 * @param {Loopable<TInner>} inner - The sequence to join to the first sequence
 	 * @param {Selector<TOuner, TKey>} outerSelector - A function to extract the join key from each element of the first sequence
 	 * @param {Selector<TInner, TKey>} innerSelector - A function to extract the join key from each element of the second sequence
 	 * @param {EqualityComparer<TKey>} [comparer] - A comparer to compare keys
@@ -704,8 +799,8 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static groupJoin<TOuner, TInner, TKey>(
-		outer: Iterable<TOuner>,
-		inner: Iterable<TInner>,
+		outer: Loopable<TOuner>,
+		inner: Loopable<TInner>,
 		outerSelector: KeySelector<TOuner, TKey>,
 		innerSelector: KeySelector<TInner, TKey>,
 		comparer?: EqualityComparer<TKey>
@@ -719,8 +814,8 @@ export class Ninq<T> implements Iterable<T> {
 	 * @template TInner
 	 * @template TKey
 	 * @template TResult
-	 * @param {Iterable<TOuner>} outer - The first sequence to join
-	 * @param {Iterable<TInner>} inner - The sequence to join to the first sequence
+	 * @param {Loopable<TOuner>} outer - The first sequence to join
+	 * @param {Loopable<TInner>} inner - The sequence to join to the first sequence
 	 * @param {Selector<TOuner, TKey>} outerSelector - A function to extract the join key from each element of the first sequence
 	 * @param {Selector<TInner, TKey>} innerSelector - A function to extract the join key from each element of the second sequence
 	 * @param {Selector<GroupJoinEntry<TOuner, TInner>, TResult>} resultSelector - A function to create a result element from an element from the first sequence
@@ -732,21 +827,22 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static groupJoin<TOuner, TInner, TKey, TResult>(
-		outer: Iterable<TOuner>,
-		inner: Iterable<TInner>,
+		outer: Loopable<TOuner>,
+		inner: Loopable<TInner>,
 		outerSelector: KeySelector<TOuner, TKey>,
 		innerSelector: KeySelector<TInner, TKey>,
 		resultSelector: KeySelector<GroupJoinEntry<TOuner, TInner>, TResult>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<TResult>;
 	static groupJoin<TOuner, TInner, TKey, TResult>(
-		outer: Iterable<TOuner>,
-		inner: Iterable<TInner>,
+		outer: Loopable<TOuner>,
+		inner: Loopable<TInner>,
 		outerSelector: KeySelector<TOuner, TKey>,
 		innerSelector: KeySelector<TInner, TKey>,
 		resultSelectorOrComparer?: KeySelector<GroupJoinEntry<TOuner, TInner>, TResult> | EqualityComparer<TKey>,
 		comparer?: EqualityComparer<TKey>
 	) {
+		[outer, inner] = [outer, inner].map(ArrayLikeIterable.toIterable) as [Iterable<TOuner>, Iterable<TInner>];
 		if (!resultSelectorOrComparer || resultSelectorOrComparer.length === 2) {
 			return new GroupJoinIterable(
 				outer,
@@ -774,7 +870,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @template TInner
 	 * @template TKey
-	 * @param {Iterable<TInner>} inner - The sequence to join to this sequence
+	 * @param {Loopable<TInner>} inner - The sequence to join to this sequence
 	 * @param {Selector<T, TKey>} keySelector - - A function to extract the join key from each element of this sequence
 	 * @param {Selector<TInner, TKey>} innerKeySelector - A function to extract the join key from each element of the inner sequence
 	 * @param {EqualityComparer<TKey>} [comparer] - A comparer to compare keys
@@ -784,7 +880,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	groupJoin<TInner, TKey>(
-		inner: Iterable<TInner>,
+		inner: Loopable<TInner>,
 		keySelector: KeySelector<T, TKey>,
 		innerKeySelector: KeySelector<TInner, TKey>,
 		comparer?: EqualityComparer<TKey>
@@ -796,7 +892,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @template TInner
 	 * @template TKey
 	 * @template TResult
-	 * @param {Iterable<TInner>} inner - The sequence to join to this sequence
+	 * @param {Loopable<TInner>} inner - The sequence to join to this sequence
 	 * @param {Selector<T, TKey>} keySelector - - A function to extract the join key from each element of this sequence
 	 * @param {Selector<TInner, TKey>} innerKeySelector - A function to extract the join key from each element of the inner sequence
 	 * @param {Selector<GroupJoinEntry<TOuner, TInner>, TResult>} resultSelector - A function to create a result element from an element from the first sequence
@@ -808,14 +904,14 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	groupJoin<TInner, TKey, TResult>(
-		inner: Iterable<TInner>,
+		inner: Loopable<TInner>,
 		keySelector: KeySelector<T, TKey>,
 		innerKeySelector: KeySelector<TInner, TKey>,
 		resultSelecor: KeySelector<GroupJoinEntry<T, TInner>, TResult>,
 		comparer?: EqualityComparer<TKey>
 	): Ninq<TResult>;
 	groupJoin<TInner, TKey, TResult>(
-		inner: Iterable<TInner>,
+		inner: Loopable<TInner>,
 		keySelector: KeySelector<T, TKey>,
 		innerKeySelector: KeySelector<TInner, TKey>,
 		resultSelecorOrComparer?: KeySelector<GroupJoinEntry<T, TInner>, TResult> | EqualityComparer<TKey>,
@@ -849,14 +945,15 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} it - Iterable to calculate avg for
+	 * @param {Loopable<T>} it - Iterable to calculate avg for
 	 * @param {T} item - The value to locate in the sequence
 	 * @param {EqualityComparer<T>} [comparer] - An optional equality comparer to compare values
 	 * @returns true if the source sequence contains an element that has the specified value; otherwise, false
 	 *
 	 * @memberOf Ninq
 	 */
-	static includes<T>(it: Iterable<T>, item: T, comparer?: EqualityComparer<T>) {
+	static includes<T>(it: Loopable<T>, item: T, comparer?: EqualityComparer<T>) {
+		it = ArrayLikeIterable.toIterable(it);
 		comparer = comparer || ((x, y) => x === y);
 		for (let element of it) {
 			if (comparer(item, element)) {
@@ -865,6 +962,16 @@ export class Ninq<T> implements Iterable<T> {
 		}
 		return false;
 	}
+
+	/**
+	 * Determines whether the sequence contains a specified element
+	 *
+	 * @param {T} item - The value to locate in the sequence
+	 * @param {EqualityComparer<T>} [comparer] - An optional equality comparer to compare values
+	 * @returns true if the source sequence contains an element that has the specified value; otherwise, false
+	 *
+	 * @memberOf Ninq
+	 */
 	includes(item: T, comparer?: EqualityComparer<T>) {
 		return Ninq.includes(this.iterable, item, comparer);
 	}
@@ -874,27 +981,28 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of the input sequences
-	 * @param {Iterable<T>} left - An Iterable<T> whose distinct elements that also appear in right will be returned
-	 * @param {Iterable<T>} right - An Iterable<T> whose distinct elements that also appear in the left sequence will be returned
+	 * @param {Loopable<T>} left - An Iterable<T> whose distinct elements that also appear in right will be returned
+	 * @param {Loopable<T>} right - An Iterable<T> whose distinct elements that also appear in the left sequence will be returned
 	 * @returns - A sequence that contains the elements that form the set intersection of two sequences
 	 *
 	 * @memberOf Ninq
 	 */
-	static intersect<T>(left: Iterable<T>, right: Iterable<T>): Set<T>;
+	static intersect<T>(left: Loopable<T>, right: Loopable<T>): Set<T>;
 	/**
 	 * Produces the set intersection of two sequences.
 	 *
 	 * @static
 	 * @template T - The type of the elements of the input sequences
-	 * @param {Iterable<T>} left - An Iterable<T> whose distinct elements that also appear in right will be returned
-	 * @param {Iterable<T>} right - An Iterable<T> whose distinct elements that also appear in the left sequence will be returned
+	 * @param {Loopable<T>} left - An Iterable<T> whose distinct elements that also appear in right will be returned
+	 * @param {Loopable<T>} right - An Iterable<T> whose distinct elements that also appear in the left sequence will be returned
 	 * @param {EqualityComparer<T>} comparer - A comparer to compare values
 	 * @returns - A sequence that contains the elements that form the set intersection of two sequences
 	 *
 	 * @memberOf Ninq
 	 */
-	static intersect<T>(left: Iterable<T>, right: Iterable<T>, comparer: EqualityComparer<T>): Iterable<T>;
-	static intersect<T>(left: Iterable<T>, right: Iterable<T>, comparer?: EqualityComparer<T>): Iterable<T> {
+	static intersect<T>(left: Loopable<T>, right: Loopable<T>, comparer: EqualityComparer<T>): Iterable<T>;
+	static intersect<T>(left: Loopable<T>, right: Loopable<T>, comparer?: EqualityComparer<T>): Iterable<T> {
+		[left, right] = [left, right].map(ArrayLikeIterable.toIterable);
 		if (comparer) {
 			return new IntersectionIterator(left, right, comparer);
 		}
@@ -912,13 +1020,13 @@ export class Ninq<T> implements Iterable<T> {
 	/**
 	 * Produces the set intersection of two sequences.
 	 *
-	 * @param {Iterable<T>} other - An Iterable<T> whose distinct elements that also appear in the left sequence will be returned
+	 * @param {Loopable<T>} other - An Iterable<T> whose distinct elements that also appear in the left sequence will be returned
 	 * @param {EqualityComparer<T>} [comparer] - An optional comparer to compare values
 	 * @returns - A sequence that contains the elements that form the set intersection of two sequences
 	 *
 	 * @memberOf Ninq
 	 */
-	intersect(other: Iterable<T>, comparer?: EqualityComparer<T>) {
+	intersect(other: Loopable<T>, comparer?: EqualityComparer<T>) {
 		const resultIterable = comparer
 			? Ninq.intersect(this.iterable, other, comparer)
 			: Ninq.intersect(this.iterable, other);
@@ -933,8 +1041,8 @@ export class Ninq<T> implements Iterable<T> {
 	 * @template TOuter - The type of the elements of the first sequence
 	 * @template TInner - The type of the elements of the second sequence
 	 * @template TKey - The type of the keys returned by the key selector functions
-	 * @param {Iterable<TOuter>} outer - The first sequence to join
-	 * @param {Iterable<TInner>} inner - The sequence to join to the first sequence
+	 * @param {Loopable<TOuter>} outer - The first sequence to join
+	 * @param {Loopable<TInner>} inner - The sequence to join to the first sequence
 	 * @param {Mapping<TOuter, TKey>} outerKeySelector - A function to extract the join key from each element of the first sequence
 	 * @param {Mapping<TInner, TKey>} innerKeySelector - A function to extract the join key from each element of the second sequence
 	 * @param {EqualityComparer<TKey>} [comparer] - An optional comparer ro compare keys
@@ -944,12 +1052,13 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static join<TOuter, TInner, TKey>(
-		outer: Iterable<TOuter>,
-		inner: Iterable<TInner>,
+		outer: Loopable<TOuter>,
+		inner: Loopable<TInner>,
 		outerKeySelector: KeySelector<TOuter, TKey>,
 		innerKeySelector: KeySelector<TInner, TKey>,
 		comparer?: EqualityComparer<TKey>
 	): Iterable<JoinMatch<TOuter, TInner>> {
+		[outer, inner] = [outer, inner].map(ArrayLikeIterable.toIterable) as [Iterable<TOuter>, Iterable<TInner>];
 		return new JoinIterable(
 			outer,
 			inner,
@@ -963,7 +1072,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @template TOther - The type of the elements of the second sequence
 	 * @template TKey - The type of the keys returned by the key selector functions
-	 * @param {Iterable<TOther>} other - The sequence to join to the first sequence
+	 * @param {Loopable<TOther>} other - The sequence to join to the first sequence
 	 * @param {Mapping<T, TKey>} keySelector - A function to extract the join key from each element of this sequence
 	 * @param {Mapping<TOther, TKey>} otherKeySelector - A function to extract the join key from each element of the other sequence
 	 * @param {EqualityComparer<TKey>} [comparer] - An optional comparer ro compare keys
@@ -973,7 +1082,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	join<TOther, TKey>(
-		other: Iterable<TOther>,
+		other: Loopable<TOther>,
 		keySelector: KeySelector<T, TKey>,
 		otherKeySelector: KeySelector<TOther, TKey>,
 		comparer?: EqualityComparer<TKey>
@@ -992,20 +1101,20 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - An Iterable<T> to return the last element of
+	 * @param {Loopable<T>} it - An Iterable<T> to return the last element of
 	 * @param {T} defValue - Default value to return in case the sequence is empty
 	 * @returns {T} - defValue if the source sequence is empty;
 	 * 	otherwise, the last element in the IEnumerable<T>
 	 *
 	 * @memberOf Ninq
 	 */
-	static lastOrDefault<T>(it: Iterable<T>, defValue: T): T;
+	static lastOrDefault<T>(it: Loopable<T>, defValue: T): T;
 	/**
 	 * Returns the last element of a sequence that satisfies a condition or a default value if no such element is found
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - An Iterable<T> to return the last element of
+	 * @param {Loopable<T>} it - An Iterable<T> to return the last element of
 	 * @param {T} defValue - Default value to return in case no element satisfies the predicate
 	 * @param {Predicate<T>} predicate - A function to test each element for a condition
 	 * @returns {T} - defValue if the sequence is empty or if no elements pass the test in the predicate function;
@@ -1013,8 +1122,15 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static lastOrDefault<T>(it: Iterable<T>, defValue: T, predicate: Predicate<T>): T;
-	static lastOrDefault<T>(it: Iterable<T>, defValue: T, predicate?: Predicate<T>) {
+	static lastOrDefault<T>(it: Loopable<T>, defValue: T, predicate: Predicate<T>): T;
+	static lastOrDefault<T>(it: Loopable<T>, defValue: T, predicate?: Predicate<T>) {
+		if (!isIterable(it)) {
+			if (!predicate) {
+				return it[it.length - 1];
+			}
+			it = ArrayLikeIterable.toIterable(it);
+		}
+
 		if (predicate) {
 			it = Ninq.filter(it, predicate);
 		}
@@ -1057,25 +1173,25 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - An Iterable<T> to return the last element of
+	 * @param {Loopable<T>} it - An Iterable<T> to return the last element of
 	 * @returns {T} - The value at the last position in the source sequence
 	 *
 	 * @memberOf Ninq
 	 */
-	static last<T>(it: Iterable<T>): T;
+	static last<T>(it: Loopable<T>): T;
 	/**
 	 * Returns the last element of a sequence that satisfies a specified condition
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - An Iterable<T> to return the last element of
+	 * @param {Loopable<T>} it - An Iterable<T> to return the last element of
 	 * @param {Predicate<T>} predicate - A function to test each element for a condition
 	 * @returns {T} - The last element in the sequence that passes the test in the specified predicate function
 	 *
 	 * @memberOf Ninq
 	 */
-	static last<T>(it: Iterable<T>, predicate: Predicate<T>): T;
-	static last<T>(it: Iterable<T>, predicate?: Predicate<T>) {
+	static last<T>(it: Loopable<T>, predicate: Predicate<T>): T;
+	static last<T>(it: Loopable<T>, predicate?: Predicate<T>) {
 		const result = predicate
 			? Ninq.lastOrDefault<T | '\0__ERROR__\0'>(it, '\0__ERROR__\0', predicate)
 			: Ninq.lastOrDefault<T | '\0__ERROR__\0'>(it, '\0__ERROR__\0');
@@ -1114,16 +1230,17 @@ export class Ninq<T> implements Iterable<T> {
 	 * @static
 	 * @template T - The type of the elements of it
 	 * @template TResult - The type of the value returned by mapping
-	 * @param {Iterable<T>} it - A sequence of values to invoke a transform function on
+	 * @param {Loopable<T>} it - A sequence of values to invoke a transform function on
 	 * @param {Mapping<T, TResult>} mapping - A transform function to apply to each source element;
 	 * 	the second parameter of the function represents the index of the source element
 	 * @returns {Iterable<TResult>} - An Iterable<T> whose elements are the result of invoking the transform function on each element of this
 	 *
 	 * @memberOf Ninq
 	 */
-	static map<T, TResult>(it: Iterable<T>, mapping: Mapping<T, TResult>)
+	static map<T, TResult>(it: Loopable<T>, mapping: Mapping<T, TResult>)
 		: Iterable<TResult> {
 
+		it = ArrayLikeIterable.toIterable(it);
 		return new MappingIterable<T, TResult>(it, mapping);
 	}
 
@@ -1149,14 +1266,14 @@ export class Ninq<T> implements Iterable<T> {
 	 * @static
 	 * @template T - The type of the elements of source
 	 * @template TResult - The type of the elements of the resulting sequence
-	 * @param {Iterable<Iterable<T>>} it - A sequence of values to project
+	 * @param {Loopable<Loopable<T>>} it - A sequence of values to project
 	 * @param {Mapping<T, TResult>} mapping - A transform function to apply to each element of the intermediate sequence
 	 * @returns {Iterable<TResult>} - An Iterable<TResult> whose elements are the result of invoking the mapping each
 	 * 	of the sequence elements to a result element
 	 *
 	 * @memberOf Ninq
 	 */
-	static mapMany<T, TResult>(it: Iterable<Iterable<T>>, mapping: Mapping<T, TResult>): Iterable<TResult>;
+	static mapMany<T, TResult>(it: Loopable<Loopable<T>>, mapping: Mapping<T, TResult>): Iterable<TResult>;
 	/**
 	 * Projects each element of a sequence to an Iterable<TCollection>,
 	 * 	flattens the resulting sequences into one sequence, and invokes a result selector function on each element therein.
@@ -1166,7 +1283,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @template T - The type of the elements of source
 	 * @template TCollection - The type of the intermediate elements collected by sequenceMapping
 	 * @template TResult - The type of the elements of the resulting sequence
-	 * @param {Iterable<T>} it - A sequence of values to project
+	 * @param {Loopable<T>} it - A sequence of values to project
 	 * @param {Mapping<T, Iterable<TCollection>>} sequenceMapping - A transform function to apply to each source element;
 	 * 	the second parameter of the function represents the index of the source element
 	 * @param {Mapping<TCollection, TResult>} resultMapping - A transform function to apply to each element of the intermediate sequence
@@ -1177,15 +1294,16 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static mapMany<T, TCollection, TResult>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		sequenceMapping: Mapping<T, Iterable<TCollection>>,
 		resultMapping: Mapping<TCollection, TResult>
 	): Iterable<TResult>;
 	static mapMany<T, TCollection, TResult>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		seqOrResMapping: Mapping<T, Iterable<TCollection>> | Mapping<T, TResult>,
 		resultMapping?: Mapping<TCollection, TResult>
 	): Iterable<TResult> {
+		it = ArrayLikeIterable.toIterable(it);
 		if (!resultMapping) {
 			resultMapping = seqOrResMapping as any;
 			seqOrResMapping = x => x as any;
@@ -1229,7 +1347,7 @@ export class Ninq<T> implements Iterable<T> {
 	mapMany<TCollection, TResult>(
 		sequenceMapping: Mapping<T, Iterable<TCollection>>,
 		resultMapping: Mapping<TCollection, TResult>
-		): Ninq<TResult>;
+	): Ninq<TResult>;
 	mapMany(
 		seqOrResMapping: Mapping<any, any>,
 		resultMapping?: Mapping<any, any>
@@ -1251,20 +1369,21 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static max(it: Iterable<number>): number | undefined;
+	static max(it: Loopable<number>): number | undefined;
 	/**
 	 * Invokes a transform function on each element of a sequence and returns the maximum value
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - A sequence of values to determine the maximum value of
+	 * @param {Loopable<T>} it - A sequence of values to determine the maximum value of
 	 * @param {Mapping<T, number>} valSelector - A transform function to apply to each element
 	 * @returns {(number | undefined)} - The maximum value in the sequence or undefined
 	 *
 	 * @memberOf Ninq
 	 */
-	static max<T>(it: Iterable<T>, valSelector: KeySelector<T, number>): number | undefined;
-	static max<T>(it: Iterable<T>, valSelector?: KeySelector<T, number>) {
+	static max<T>(it: Loopable<T>, valSelector: KeySelector<T, number>): number | undefined;
+	static max<T>(it: Loopable<T>, valSelector?: KeySelector<T, number>) {
+		it = ArrayLikeIterable.toIterable(it);
 		const selector = valSelector || (x => x as any as number);
 		return Ninq.reduce(it, (max: number | undefined, current: T) =>
 			Math.max(Ninq.$default(max, -Infinity), selector(current))
@@ -1298,25 +1417,25 @@ export class Ninq<T> implements Iterable<T> {
 	 * Returns the minimum value in a sequence
 	 *
 	 * @static
-	 * @param {Iterable<number>} it - A sequence of values to determine the minimum value of
+	 * @param {Loopable<number>} it - A sequence of values to determine the minimum value of
 	 * @returns {(number | undefined)} - The minimum value in the sequence
 	 *
 	 * @memberOf Ninq
 	 */
-	static min(it: Iterable<number>): number | undefined;
+	static min(it: Loopable<number>): number | undefined;
 	/**
 	 * Invokes a transform function on each element of a sequence and returns the minimum value
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - A sequence of values to determine the minimum value of
+	 * @param {Loopable<T>} it - A sequence of values to determine the minimum value of
 	 * @param {Mapping<T, number>} valSelector - A transform function to apply to each element
 	 * @returns {(number | undefined)} - The minimum value in the sequence
 	 *
 	 * @memberOf Ninq
 	 */
-	static min<T>(it: Iterable<T>, valSelector: KeySelector<T, number>): number | undefined;
-	static min<T>(it: Iterable<T>, valSelector?: KeySelector<T, number>) {
+	static min<T>(it: Loopable<T>, valSelector: KeySelector<T, number>): number | undefined;
+	static min<T>(it: Loopable<T>, valSelector?: KeySelector<T, number>) {
 		const selector = valSelector || (x => x as any as number);
 		return Ninq.reduce(it, (min: number | undefined, current: T) =>
 			Math.min(Ninq.$default(min, Infinity), selector(current))
@@ -1396,14 +1515,14 @@ export class Ninq<T> implements Iterable<T> {
 	 * @static
 	 * @template T - Iterable type
 	 * @template TResult - The type of the accumulator value
-	 * @param  {Iterable<T>} - Iterable to reduce
+	 * @param  {Loopable<T>} - Iterable to reduce
 	 * @param {ReductionFunc<T, TResult>} reduction - An accumulator function to be invoked on each element.
 	 * @returns {(TResult | undefined)} The final accumulator value
 	 *
 	 * @memberOf Ninq
 	 */
 	static reduce<T, TResult>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		reduction: ReductionFunc<T, TResult>
 	): TResult | undefined;
 	/**
@@ -1413,7 +1532,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @static
 	 * @template T - Iterable type
 	 * @template TResult - The type of the accumulator value
-	 * @param  {Iterable<T>} - Iterable to reduce
+	 * @param  {Loopable<T>} - Iterable to reduce
 	 * @param {TResult} seed - The initial accumulator value
 	 * @param {ReductionFunc<T, TResult>} reduction - An accumulator function to be invoked on each element
 	 * @returns {TResult} - The final accumulator value
@@ -1421,12 +1540,12 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static reduce<T, TResult>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		seed: TResult,
 		reduction: ReductionFunc<T, TResult>
 	): TResult;
 	static reduce<T, TResult>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		seedOrReduc: TResult | ReductionFunc<T, TResult>,
 		reduc?: ReductionFunc<T, TResult>
 	): TResult | undefined {
@@ -1437,6 +1556,7 @@ export class Ninq<T> implements Iterable<T> {
 			? seedOrReduc as TResult
 			: undefined;
 		let i = 0;
+		it = ArrayLikeIterable.toIterable(it);
 		for (let item of it) {
 			result = reduction(result, item, i);
 			i++;
@@ -1486,13 +1606,13 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} iterable - A sequence of values to reverse
+	 * @param {Loopable<T>} iterable - A sequence of values to reverse
 	 * @returns {Iterable<T>} - A sequence whose elements correspond to those of the input sequence in reverse order
 	 *
 	 * @memberOf Ninq
 	 */
-	static reverse<T>(iterable: Iterable<T>): Iterable<T> {
-		return new ReverseIterable<T>(iterable);
+	static reverse<T>(iterable: Loopable<T>): Iterable<T> {
+		return new ReverseIterable<T>(ArrayLikeIterable.toIterable(iterable));
 	}
 
 	/**
@@ -1511,14 +1631,14 @@ export class Ninq<T> implements Iterable<T> {
 	 * Determines whether two sequences are equal by comparing the elements
 	 *
 	 * @template T - The type of the elements of the input sequences
-	 * @param {Iterable<T>} left - An Iterable<T> to compare to right sequence
-	 * @param {Iterable<T>} right - An Iterable<T> to compare to the left sequence
+	 * @param {Loopable<T>} left - An Iterable<T> to compare to right sequence
+	 * @param {Loopable<T>} right - An Iterable<T> to compare to the left sequence
 	 * @param {EqualityComparer<T>} [equalityComparer] - A comparing func to compare elements
 	 * @returns {boolean} - true if the two source sequences are of equal length and their corresponding elements compare equal; otherwise, false
 	 *
 	 * @memberOf Ninq
 	 */
-	static sequenceEqual<T>(left: Iterable<T>, right: Iterable<T>, equalityComparer?: EqualityComparer<T>): boolean {
+	static sequenceEqual<T>(left: Loopable<T>, right: Loopable<T>, equalityComparer?: EqualityComparer<T>): boolean {
 		const comparer = equalityComparer || ((x, y) => x === y) as EqualityComparer<T>;
 		return Ninq.every(
 			Ninq.zip(left, right),
@@ -1529,13 +1649,13 @@ export class Ninq<T> implements Iterable<T> {
 	/**
 	 * Determines whether two sequences are equal by comparing the elements
 	 *
-	 * @param {Iterable<T>} other - An Iterable<T> to compare to the this sequence
+	 * @param {Loopable<T>} other - An Iterable<T> to compare to the this sequence
 	 * @param {EqualityComparer<T>} [equalityComparer] - A comparing func to compare elements
 	 * @returns {boolean} - true if the two source sequences are of equal length and their corresponding elements compare equal; otherwise, false
 	 *
 	 * @memberOf Ninq
 	 */
-	sequenceEqual(other: Iterable<T>, equalityComparer?: EqualityComparer<T>): boolean {
+	sequenceEqual(other: Loopable<T>, equalityComparer?: EqualityComparer<T>): boolean {
 		return Ninq.sequenceEqual(this.iterable, other, equalityComparer);
 	}
 
@@ -1545,30 +1665,33 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - An Iterable<T> to return the single element of
+	 * @param {Loopable<T>} it - An Iterable<T> to return the single element of
 	 * @param {T} defVal - An element to return if the sequence contains no elements
 	 * @returns {T} - The single element of the input sequence, or defValue if the sequence contains no elements
 	 *
 	 * @memberOf Ninq
 	 */
-	static singleOrDefault<T>(it: Iterable<T>, defVal: T): T;
+	static singleOrDefault<T>(it: Loopable<T>, defVal: T): T;
 	/**
 	 * Returns the only element of a sequence that satisfies a specified condition or a default value if no such element exists;
 	 * 	this method throws an exception if more than one element satisfies the condition
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it
+	 * @param {Loopable<T>} it
 	 * @param {T} defVal - An element to return if the sequence contains no elements
 	 * @param {Predicate<T>} predicate - A function to test an element for a condition
 	 * @returns {T} - The single element of the input sequence that satisfies the condition, or defVal if no such element is found
 	 *
 	 * @memberOf Ninq
 	 */
-	static singleOrDefault<T>(it: Iterable<T>, defVal: T, predicate: Predicate<T>): T;
-	static singleOrDefault<T>(it: Iterable<T>, defVal: T, predicate?: Predicate<T>) {
+	static singleOrDefault<T>(it: Loopable<T>, defVal: T, predicate: Predicate<T>): T;
+	static singleOrDefault<T>(it: Loopable<T>, defVal: T, predicate?: Predicate<T>) {
 		if (predicate) {
 			it = Ninq.filter(it, predicate);
+		}
+		else {
+			it = ArrayLikeIterable.toIterable(it);
 		}
 		let isFirstIteration = true;
 		for (let item of it) {
@@ -1611,26 +1734,26 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - An Iterable<T> to return the single element of
+	 * @param {Loopable<T>} it - An Iterable<T> to return the single element of
 	 * @returns {T} - The single element of the input sequence
 	 *
 	 * @memberOf Ninq
 	 */
-	static single<T>(it: Iterable<T>): T;
+	static single<T>(it: Loopable<T>): T;
 	/**
 	 * Returns the only element of a sequence that satisfies a specified condition,
 	 * 	and throws an exception if more than one such element exists
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - An Iterable<T> to return the single element of
+	 * @param {Loopable<T>} it - An Iterable<T> to return the single element of
 	 * @param {Predicate<T>} predicate - A function to test an element for a condition
 	 * @returns {T} - The single element of the input sequence that satisfies a condition
 	 *
 	 * @memberOf Ninq
 	 */
-	static single<T>(it: Iterable<T>, predicate: Predicate<T>): T;
-	static single<T>(it: Iterable<T>, predicate?: Predicate<T>) {
+	static single<T>(it: Loopable<T>, predicate: Predicate<T>): T;
+	static single<T>(it: Loopable<T>, predicate?: Predicate<T>) {
 		const result = Ninq.singleOrDefault<T | '\0__ERROR__\0'>(it, '\0__ERROR__\0', predicate as any);
 		if (result === '\0__ERROR__\0') {
 			throw new Error('Empty sequence');
@@ -1666,7 +1789,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - An Iterable<T> to return elements from
+	 * @param {Loopable<T>} it - An Iterable<T> to return elements from
 	 * @param {Predicate<T>} predicate - A function to test each source element for a condition;
 	 * 	the second parameter of the function represents the index of the source element
 	 * @returns - An Iterable<T> that contains the elements from the input sequence starting
@@ -1674,8 +1797,11 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static skipWhile<T>(it: Iterable<T>, predicate: Predicate<T>): Iterable<T> {
-		return new SkippingIterable(it, predicate);
+	static skipWhile<T>(it: Loopable<T>, predicate: Predicate<T>): Iterable<T> {
+		return new SkippingIterable(
+			ArrayLikeIterable.toIterable(it),
+			predicate
+		);
 	}
 
 	/**
@@ -1699,13 +1825,13 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - An Iterable<T> to return elements from
+	 * @param {Loopable<T>} it - An Iterable<T> to return elements from
 	 * @param {number} count - The number of elements to skip before returning the remaining elements
 	 * @returns - An Iterable<T> that contains the elements that occur after the specified index in the input sequence
 	 *
 	 * @memberOf Ninq
 	 */
-	static skip<T>(it: Iterable<T>, count: number) {
+	static skip<T>(it: Loopable<T>, count: number) {
 		if (count < 0) {
 			throw new Error('count must be greater or equal to zero');
 		}
@@ -1730,26 +1856,32 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - Iterable type
-	 * @param  {Iterable<T>} - Iterable to reduce
+	 * @param  {Loopable<T>} - Iterable to reduce
 	 * @returns {boolean} true if the source sequence contains any elements; otherwise, false
 	 *
 	 * @memberOf Ninq
 	 */
-	static some<T>(it: Iterable<T>): boolean;
+	static some<T>(it: Loopable<T>): boolean;
 	/**
 	 * Determines whether any element of a sequence satisfies a condition
 	 *
 	 * @static
 	 * @template T - Iterable type
-	 * @param  {Iterable<T>} - Iterable to reduce
+	 * @param  {Loopable<T>} - Iterable to reduce
 	 * @param {Predicate<T>} prediacte - A function to test each element for a condition
 	 * @returns {boolean} - true if any elements in the source sequence pass the test in the specified predicate;
 	 * 	otherwise, false
 	 *
 	 * @memberOf Ninq
 	 */
-	static some<T>(it: Iterable<T>, prediacte: Predicate<T>): boolean;
-	static some<T>(it: Iterable<T>, prediacte?: Predicate<T>) {
+	static some<T>(it: Loopable<T>, prediacte: Predicate<T>): boolean;
+	static some<T>(it: Loopable<T>, prediacte?: Predicate<T>) {
+		if (!isIterable(it)) {
+			if (!prediacte) {
+				return it.length > 0;
+			}
+			it = ArrayLikeIterable.toIterable(it);
+		}
 		return typeof prediacte === 'function'
 			? !Ninq.every(it, (item, i) => !prediacte(item, i))
 			: !it[Symbol.iterator]()
@@ -1784,38 +1916,38 @@ export class Ninq<T> implements Iterable<T> {
 	 * Sorts the elements of a sequence in the specified order (default: ascending)
 	 *
 	 * @static
-	 * @param {Iterable<number>} iterable - A sequence of values to order
+	 * @param {Loopable<number>} iterable - A sequence of values to order
 	 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
 	 * @returns {SortedIterable<number>} - A SortedInterable<T> whose elements are sorted
 	 *
 	 * @memberOf Ninq
 	 */
-	static sortBy(iterable: Iterable<number>, descending?: boolean): SortedIterable<number>;
+	static sortBy(iterable: Loopable<number>, descending?: boolean): SortedIterable<number>;
 	/**
 	 * Sorts the elements of a sequence in the specified order (default: ascending)
 	 *
 	 * @static
-	 * @param {Iterable<string>} iterable - A sequence of values to order
+	 * @param {Loopable<string>} iterable - A sequence of values to order
 	 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
 	 * @returns {SortedIterable<string>} - A SortedInterable<T> whose elements are sorted
 	 *
 	 * @memberOf Ninq
 	 */
-	static sortBy(iterable: Iterable<string>, descending?: boolean): SortedIterable<string>;
+	static sortBy(iterable: Loopable<string>, descending?: boolean): SortedIterable<string>;
 	/**
 	 * Sorts the elements of a sequence in the specified order (default: ascending) by using a specified comparer
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} iterable - A sequence of values to order
+	 * @param {Loopable<T>} iterable - A sequence of values to order
 	 * @param {Comparer<T>} comparer - A comparer to compare keys
 	 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
 	 * @returns {SortedIterable<T>} - A SortedInterable<T> whose elements are sorted
 	 *
 	 * @memberOf Ninq
 	 */
-	static sortBy<T>(iterable: Iterable<T>, comparer: Comparer<T>, descending?: boolean): SortedIterable<T>;
-	static sortBy<T>(iterable: Iterable<T>, comparerOrDesc?: Comparer<T> | boolean, descending?: boolean) {
+	static sortBy<T>(iterable: Loopable<T>, comparer: Comparer<T>, descending?: boolean): SortedIterable<T>;
+	static sortBy<T>(iterable: Loopable<T>, comparerOrDesc?: Comparer<T> | boolean, descending?: boolean) {
 		let comparer: Comparer<T | Comparable>;
 		[comparer, descending] = !comparerOrDesc || typeof comparerOrDesc === 'boolean'
 			? [
@@ -1826,6 +1958,7 @@ export class Ninq<T> implements Iterable<T> {
 				comparerOrDesc || descending
 			]
 			: [comparerOrDesc, descending];
+		iterable = ArrayLikeIterable.toIterable(iterable);
 
 		return new SortingIterable(iterable, comparer, descending);
 	}
@@ -1880,26 +2013,26 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 *
 	 * @static
-	 * @param {Iterable<number>} it - A sequence of number values to calculate the sum of
+	 * @param {Loopable<number>} it - A sequence of number values to calculate the sum of
 	 * @returns {number} - The sum of the values in the sequence
 	 *
 	 * @memberOf Ninq
 	 */
-	static sum(it: Iterable<number>): number;
+	static sum(it: Loopable<number>): number;
 	/**
 	 * Computes the sum of the sequence of number values that are obtained by invoking a transform function
 	 * 	on each element of the input sequence
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - A sequence of values that are used to calculate a sum
+	 * @param {Loopable<T>} it - A sequence of values that are used to calculate a sum
 	 * @param {KeySelector<T, number>} selector - A transform function to apply to each element
 	 * @returns - The sum of the projected values
 	 *
 	 * @memberOf Ninq
 	 */
-	static sum<T>(it: Iterable<T>, selector: KeySelector<T, number>): number;
-	static sum<T>(it: Iterable<T>, selector?: KeySelector<T, number>) {
+	static sum<T>(it: Loopable<T>, selector: KeySelector<T, number>): number;
+	static sum<T>(it: Loopable<T>, selector?: KeySelector<T, number>) {
 		const keySelector: KeySelector<T, number> = selector || ((x: any) => x) as any;
 		return Ninq.reduce(
 			it,
@@ -1926,15 +2059,18 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - A sequence to return elements from
+	 * @param {Loopable<T>} it - A sequence to return elements from
 	 * @param {Predicate<T>} predicate - A function to test each element for a condition
 	 * @returns - An Iterable<T> that contains the elements from the input sequence
 	 * 	that occur before the element at which the test no longer passes
 	 *
 	 * @memberOf Ninq
 	 */
-	static takeWhile<T>(it: Iterable<T>, predicate: Predicate<T>): Iterable<T> {
-		return new TakeWhileIterable(it, predicate);
+	static takeWhile<T>(it: Loopable<T>, predicate: Predicate<T>): Iterable<T> {
+		return new TakeWhileIterable(
+			ArrayLikeIterable.toIterable(it),
+			predicate
+		);
 	}
 
 	/**
@@ -1956,13 +2092,13 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - The sequence to return elements from
+	 * @param {Loopable<T>} it - The sequence to return elements from
 	 * @param {number} count - The number of elements to return
 	 * @returns - An Iterable<T> that contains the specified number of elements from the start of the input sequence
 	 *
 	 * @memberOf Ninq
 	 */
-	static take<T>(it: Iterable<T>, count: number) {
+	static take<T>(it: Loopable<T>, count: number) {
 		if (count < 0) {
 			throw new Error('count must be greater or equal to zero');
 		}
@@ -1988,13 +2124,16 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - An Iterable<T> to create an array from
+	 * @param {Loopable<T>} it - An Iterable<T> to create an array from
 	 * @returns {T[]} - An array that contains the elements from the input sequence
 	 *
 	 * @memberOf Ninq
 	 */
-	static toArray<T>(it: Iterable<T>): T[] {
-		const [...result] = it;
+	static toArray<T>(it: Loopable<T>): T[] {
+		if (it instanceof Array) {
+			return it;
+		}
+		const [...result] = ArrayLikeIterable.toIterable(it);
 		return result;
 	}
 
@@ -2004,13 +2143,13 @@ export class Ninq<T> implements Iterable<T> {
 	 * @static
 	 * @template T - The type of the elements of it
 	 * @template TKey - The type of the key returned by keySelector
-	 * @param {Iterable<T>} it - The Iterable<T> to create a Lookup<TKey, T> from
+	 * @param {Loopable<T>} it - The Iterable<T> to create a Lookup<TKey, T> from
 	 * @param {KeySelector<T, TKey>} keySelector - A function to extract a key from each element
 	 * @returns {Lookup<TKey, T>} - A Lookup<TKey, T> that contains keys and values
 	 *
 	 * @memberOf Ninq
 	 */
-	static toLookup<T, TKey>(it: Iterable<T>, keySelector: KeySelector<T, TKey>): Lookup<TKey, T>;
+	static toLookup<T, TKey>(it: Loopable<T>, keySelector: KeySelector<T, TKey>): Lookup<TKey, T>;
 	/**
 	 * Creates a Lookup<TKey, TValue> from an Iterable<T> according to specified key selector and element selector functions
 	 *
@@ -2018,7 +2157,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @template T - The type of the elements of it
 	 * @template TKey - The type of the key returned by keySelector
 	 * @template TValue
-	 * @param {Iterable<T>} it - The Iterable<T> to create a Lookup<TKey, T> from
+	 * @param {Loopable<T>} it - The Iterable<T> to create a Lookup<TKey, T> from
 	 * @param {KeySelector<T, TKey>} keySelector - A function to extract a key from each element
 	 * @param {KeySelector<T, TValue>} valueSelector - A transform function to produce a result element value from each element
 	 * @returns {Lookup<TKey, TValue>} - A Lookup<TKey, TV> that contains keys and values
@@ -2026,17 +2165,19 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static toLookup<T, TKey, TValue>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		keySelector: KeySelector<T, TKey>,
 		valueSelector: KeySelector<T, TValue>
 	): Lookup<TKey, TValue>;
 	static toLookup<T, TKey>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		keySelector: KeySelector<T, TKey>,
 		vs?: KeySelector<T, any>
 	): Lookup<TKey, any> {
 		const valueSelector = vs || (x => x);
 		const result = new Map<TKey, Iterable<any>>();
+
+		it = ArrayLikeIterable.toIterable(it);
 		for (const item of it) {
 			const key = keySelector(item),
 				value = valueSelector(item),
@@ -2084,7 +2225,7 @@ export class Ninq<T> implements Iterable<T> {
 		for (const [key, value] of result.entries()) {
 			result.set(key, new Ninq(value));
 		}
-		return  result as any;
+		return result as any;
 	}
 
 	/**
@@ -2092,20 +2233,20 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - The Iterable<T> to create a Hash<Iterable<T>> from
+	 * @param {Loopable<T>} it - The Iterable<T> to create a Hash<Iterable<T>> from
 	 * @param {KeySelector<T, string>} keySelector - A function to extract a key from each element
 	 * @returns {Hash<Iterable<T>>} - A Hash<Iterable<T>> that contains keys and values
 	 *
 	 * @memberOf Ninq
 	 */
-	static toLookupObject<T>(it: Iterable<T>, keySelector: KeySelector<T, string>): Hash<Iterable<T>>;
+	static toLookupObject<T>(it: Loopable<T>, keySelector: KeySelector<T, string>): Hash<Iterable<T>>;
 	/**
 	 * Creates a Hash<Iterable<TValue>> from an Iterable<T> according to specified key selector and element selector functions
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
 	 * @template TValue - The type of the value returned by valueSelector
-	 * @param {Iterable<T>} it - The Iterable<T> to create a Hash<Iterable<T>> from
+	 * @param {Loopable<T>} it - The Iterable<T> to create a Hash<Iterable<T>> from
 	 * @param {KeySelector<T, string>} keySelector - A function to extract a key from each element
 	 * @param {KeySelector<T, TValue>} valueSelector - A transform function to produce a result element value from each element
 	 * @returns {Hash<Iterable<TValue>>} - A Hash<Iterable<TValue>> that contains keys and values
@@ -2113,17 +2254,19 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static toLookupObject<T, TValue>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		keySelector: KeySelector<T, string>,
 		valueSelector: KeySelector<T, TValue>
 	): Hash<Iterable<TValue>>;
 	static toLookupObject<T>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		keySelector: KeySelector<T, string>,
 		vs?: KeySelector<T, any>
 	): Hash<Iterable<any>> {
 		const valueSelector = vs || (x => x);
 		const result: Hash<Iterable<any>> = {};
+
+		it = ArrayLikeIterable.toIterable(it);
 		for (const item of it) {
 			const key = keySelector(item),
 				value = valueSelector(item),
@@ -2173,13 +2316,13 @@ export class Ninq<T> implements Iterable<T> {
 	 * @static
 	 * @template T - The type of the elements of it
 	 * @template TKey - The type of the key returned by keySelector
-	 * @param {Iterable<T>} it - An Iterable<T> to create a Map<TKey, T> from
+	 * @param {Loopable<T>} it - An Iterable<T> to create a Map<TKey, T> from
 	 * @param {KeySelector<T, TKey>} keySelector - A function to extract a key from each element
 	 * @returns {Map<TKey, T>} - A Map<TKey, T> that contains keys and values
 	 *
 	 * @memberOf Ninq
 	 */
-	static toMap<T, TKey>(it: Iterable<T>, keySelector: KeySelector<T, TKey>): Map<TKey, T>;
+	static toMap<T, TKey>(it: Loopable<T>, keySelector: KeySelector<T, TKey>): Map<TKey, T>;
 	/**
 	 * Creates a Map<TKey, TValue> from an Iterable<T> according to specified key selector and element selector functions
 	 *
@@ -2187,7 +2330,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @template T - The type of the elements of it
 	 * @template TKey - The type of the key returned by keySelector
 	 * @template TValue - The type of the value returned by valueSelector
-	 * @param {Iterable<T>} it - An Iterable<T> to create a Map<TKey, TValue> from
+	 * @param {Loopable<T>} it - An Iterable<T> to create a Map<TKey, TValue> from
 	 * @param {KeySelector<T, TKey>} keySelector - A function to extract a key from each element
 	 * @param {KeySelector<T, TValue>} valueSelector - A transform function to produce a result element value from each element
 	 * @returns {Map<TKey, TValue>} - A Map<TKey, TValue> that contains values of type TValue selected from the input sequence
@@ -2195,17 +2338,19 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static toMap<T, TKey, TValue>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		keySelector: KeySelector<T, TKey>,
 		valueSelector: KeySelector<T, TValue>
 	): Map<TKey, TValue>;
 	static toMap<T, TK>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		keySelector: KeySelector<T, TK>,
 		vs?: KeySelector<T, any>
 	): Map<TK, any> {
 		const valueSelector: KeySelector<T, any> = vs || (x => x);
 		const result = new Map<TK, any>();
+
+		it = ArrayLikeIterable.toIterable(it);
 		for (const item of it) {
 			const key = keySelector(item),
 				value = valueSelector(item);
@@ -2252,20 +2397,20 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
-	 * @param {Iterable<T>} it - An Iterable<T> to create a Hash<T> from
+	 * @param {Loopable<T>} it - An Iterable<T> to create a Hash<T> from
 	 * @param {KeySelector<T, string>} keySelector - A function to extract a key from each element
 	 * @returns {Hash<T>} - A Hash<T> that contains keys and values
 	 *
 	 * @memberOf Ninq
 	 */
-	static toObject<T>(it: Iterable<T>, keySelector: KeySelector<T, string>): Hash<T>;
+	static toObject<T>(it: Loopable<T>, keySelector: KeySelector<T, string>): Hash<T>;
 	/**
 	 * Creates a Hash<TValue> from an Iterable<T> according to specified element selector function
 	 *
 	 * @static
 	 * @template T - The type of the elements of it
 	 * @template TValue - The type of the value returned by valueSelector
-	 * @param {Iterable<T>} it - An Iterable<T> to create a Hash<TValue> from
+	 * @param {Loopable<T>} it - An Iterable<T> to create a Hash<TValue> from
 	 * @param {KeySelector<T, string>} keySelector - A function to extract a key from each element
 	 * @param {KeySelector<T, TValue>} valueSelector - A transform function to produce a result element value from each element
 	 * @returns {Hash<TValue>} - A Hash<TValue> that contains values of type TValue selected from the input sequence
@@ -2273,17 +2418,19 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static toObject<T, TValue>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		keySelector: KeySelector<T, string>,
 		valueSelector: KeySelector<T, TValue>
 	): Hash<TValue>;
 	static toObject<T>(
-		it: Iterable<T>,
+		it: Loopable<T>,
 		keySelector: KeySelector<T, string>,
 		vs?: KeySelector<T, any>
 	): Hash<any> {
 		const valueSelector: KeySelector<T, any> = vs || (x => x);
 		const result: Hash<any> = {};
+
+		it = ArrayLikeIterable.toIterable(it);
 		for (const item of it) {
 			const key = keySelector(item),
 				value = valueSelector(item);
@@ -2338,35 +2485,36 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @static
 	 * @template T - The type of the elements of the input sequences
-	 * @param {Iterable<T>} left - An Iterable<T> whose distinct elements form the first set for the union
-	 * @param {Iterable<T>} right - An Iterable<T> whose distinct elements form the second set for the union
+	 * @param {Loopable<T>} left - An Iterable<T> whose distinct elements form the first set for the union
+	 * @param {Loopable<T>} right - An Iterable<T> whose distinct elements form the second set for the union
 	 * @returns {Set<T>} - A Set<T> that contains the elements from both input sequences, excluding duplicates
 	 *
 	 * @memberOf Ninq
 	 */
-	static union<T>(left: Iterable<T>, right: Iterable<T>): Set<T>;
+	static union<T>(left: Loopable<T>, right: Loopable<T>): Set<T>;
 	/**
 	 * Produces the set union of two sequences by using a specified comparer
 	 *
 	 * @static
 	 * @template T - The type of the elements of the input sequences
-	 * @param {Iterable<T>} left - An Iterable<T> whose distinct elements form the first set for the union
-	 * @param {Iterable<T>} right - An Iterable<T> whose distinct elements form the second set for the union
+	 * @param {Loopable<T>} left - An Iterable<T> whose distinct elements form the first set for the union
+	 * @param {Loopable<T>} right - An Iterable<T> whose distinct elements form the second set for the union
 	 * @param {EqualityComparer<T>} [comparer] - The comparer to compare values
 	 * @returns {Iterable<T>} - An Iterable<T> that contains the elements from both input sequences, excluding duplicates
 	 *
 	 * @memberOf Ninq
 	 */
 	static union<T>(
-		left: Iterable<T>,
-		right: Iterable<T>,
+		left: Loopable<T>,
+		right: Loopable<T>,
 		comparer: EqualityComparer<T>
 	): Iterable<T>;
 	static union<T>(
-		left: Iterable<T>,
-		right: Iterable<T>,
+		left: Loopable<T>,
+		right: Loopable<T>,
 		comparer?: EqualityComparer<T>
 	): Iterable<T> {
+		[left, right] = [left, right].map(ArrayLikeIterable.toIterable);
 		if (comparer) {
 			return new UnionIterable(left, right, comparer);
 		}
@@ -2382,14 +2530,14 @@ export class Ninq<T> implements Iterable<T> {
 	/**
 	 * Produces the set union of two sequences by using a specified comparer
 	 *
-	 * @param {Iterable<T>} other - An Iterable<T> whose distinct elements form the second set for the union
+	 * @param {Loopable<T>} other - An Iterable<T> whose distinct elements form the second set for the union
 	 * @param {EqualityComparer<T>} [comparer] - The comparer to compare values
 	 * @returns {Ninq<T>} - An Iterable<T> that contains the elements from both input sequences, excluding duplicates
 	 *
 	 * @memberOf Ninq
 	 */
 	union(
-		other: Iterable<T>,
+		other: Loopable<T>,
 		comparer?: EqualityComparer<T>
 	): Ninq<T> {
 		return new Ninq(Ninq.union(this.iterable, other, comparer as any));
@@ -2401,52 +2549,53 @@ export class Ninq<T> implements Iterable<T> {
 	 * @static
 	 * @template L - The type of the elements of the input sequences
 	 * @template R - The type of the elements of the input sequences
-	 * @param {Iterable<L>} left - The first sequence to merge
-	 * @param {Iterable<R>} right - The second sequence to merge
+	 * @param {Loopable<L>} left - The first sequence to merge
+	 * @param {Loopable<R>} right - The second sequence to merge
 	 * @returns {Iterable<[T, T]>} - An Iterable<T> that contains merged elements of two input sequences
 	 *
 	 * @memberOf Ninq
 	 */
-	static zip<L, R>(left: Iterable<L>, right: Iterable<R>): Iterable<[L, R]>;
+	static zip<L, R>(left: Loopable<L>, right: Loopable<R>): Iterable<[L, R]>;
 	/**
 	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
 	 *
 	 * @static
 	 * @template T - The type of the elements of the input sequences
-	 * @param {Iterable<T>} left - The first sequence to merge
-	 * @param {Iterable<T>} right - The second sequence to merge
+	 * @param {Loopable<T>} left - The first sequence to merge
+	 * @param {Loopable<T>} right - The second sequence to merge
 	 * @param {boolean} [throughAll] - true to return all elements from both sequences; otherwise, iteration stops with
 	 *	the first exhausted sequence
 	 * @returns {(Iterable<[T | undefined, T | undefined]>)} - An Iterable<T> that contains merged elements of two input sequences
 	 *
 	 * @memberOf Ninq
 	 */
-	static zip<L, R>(left: Iterable<L>, right: Iterable<R>, throughAll?: boolean): Iterable<[L | undefined, R | undefined]>;
-	static zip<L, R>(left: Iterable<L>, right: Iterable<R>, throughAll?: boolean) {
+	static zip<L, R>(left: Loopable<L>, right: Loopable<R>, throughAll?: boolean): Iterable<[L | undefined, R | undefined]>;
+	static zip<L, R>(left: Loopable<L>, right: Loopable<R>, throughAll?: boolean) {
+		[left, right] = [left, right].map(ArrayLikeIterable.toIterable) as [Iterable<L>, Iterable<R>];
 		return new ZipIterable(left, right, throughAll);
 	}
 
 	/**
 	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
 	 *
-	 * @param {Iterable<T>} other - The other sequence to merge
+	 * @param {Loopable<T>} other - The other sequence to merge
 	 * @returns {(Ninq<[T, T]>)} - An Iterable<T> that contains merged elements of two input sequences
 	 *
 	 * @memberOf Ninq
 	 */
-	zip<U>(other: Iterable<U>): Ninq<[T, U]>;
+	zip<U>(other: Loopable<U>): Ninq<[T, U]>;
 	/**
 	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
 	 *
-	 * @param {Iterable<T>} other - The other sequence to merge
+	 * @param {Loopable<T>} other - The other sequence to merge
 	 * @param {boolean} [throughAll] - true to return all elements from both sequences; otherwise, iteration stops with
 	 *	the first exhausted sequence
 	 * @returns {(Ninq<[T | undefined, T | undefined]>)} - An Iterable<T> that contains merged elements of two input sequences
 	 *
 	 * @memberOf Ninq
 	 */
-	zip<U>(other: Iterable<U>, throughAll?: boolean): Ninq<[T | undefined, U | undefined]>;
-	zip<U>(other: Iterable<U>, throughAll?: boolean) {
+	zip<U>(other: Loopable<U>, throughAll?: boolean): Ninq<[T | undefined, U | undefined]>;
+	zip<U>(other: Loopable<U>, throughAll?: boolean) {
 		const it = Ninq.zip(this.iterable, other);
 		return new Ninq(it);
 	}
