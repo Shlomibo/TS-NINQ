@@ -52,9 +52,6 @@
         "no-empty": true,
         "no-require-imports": true,
         "no-unused-expression": false,
-        "no-unused-variable": [
-            true
-        ],
         "switch-default": true,
         "whitespace": [
             true,

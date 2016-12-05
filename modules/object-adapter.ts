@@ -47,7 +47,7 @@ export function adaptTo<
 			}
 			const func = [main, secondary]
 				.find(x => typeof x === 'function') as Function;
-			return func.apply(thisArg, argList);
+			return func.call(thisArg, ...argList);
 		},
 	});
 

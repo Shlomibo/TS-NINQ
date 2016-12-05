@@ -3,10 +3,6 @@ export interface GroupJoinEntry<TOuter, TInner> {
 	outer: TOuter;
 	inner: Iterable<TInner>;
 }
-type KeyMapping<TOuter, TInner> = {
-	outer: TOuter,
-	inner: TInner[]
-};
 
 export default class GroupJoinIterable<TOuter, TInner, TKey, TResult> implements Iterable<TResult> {
 	constructor(

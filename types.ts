@@ -1,18 +1,18 @@
 import { Ninq } from './ninq';
-export type ReductionFunc<T, U> = (aggregate: U | undefined, item: T, index: number) => U;
-export type Predicate<T> = (item: T, index: number) => boolean;
-export type KeySelector<T, U> = (item: T) => U;
-export type Mapping<T, U> = (item: T, index: number) => U;
-export type EqualityComparer<T> = (left: T, right: T) => boolean;
+export type ReductionFunc<T, U> = (this: void, aggregate: U | undefined, item: T, index: number) => U;
+export type Predicate<T> = (this: void, item: T, index: number) => boolean;
+export type KeySelector<T, U> = (this: void, item: T) => U;
+export type Mapping<T, U> = (this: void, item: T, index: number) => U;
+export type EqualityComparer<T> = (this: void, left: T, right: T) => boolean;
 export type Comparable = number | string;
-export type Comparer<T> = (left: T, right: T) => number;
-export type ComparisonFunc<T, R> = (x: T, y: T) => R;
+export type Comparer<T> = (this: void, left: T, right: T) => number;
+export type ComparisonFunc<T, R> = (this: void, x: T, y: T) => R;
 export type Loopable<T> = Iterable<T> | ArrayLike<T>;
 export type Generator<T> = (...args: any[]) => Iterable<T>;
 
 export interface SortedCollection<T> extends Iterable<T> {
-	add(...items: T[]): void;
-	addRange(items: T[]): void;
+	add(this: SortedCollection<T>, ...items: T[]): void;
+	addRange(this: SortedCollection<T>, items: T[]): void;
 }
 
 export interface Hash<T> {

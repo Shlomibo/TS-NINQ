@@ -6,20 +6,21 @@
         "declaration": true,
         "declarationDir": "ninq-typings",
         "forceConsistentCasingInFileNames": true,
-        "listFiles": true,
+        // "listEmittedFiles": true,
         "moduleResolution": "node",
         "newLine": "LF",
         "lib": [
             "es2016"
         ],
-        "pretty": true,
+        "suppressImplicitAnyIndexErrors": true,
 
         "noImplicitAny": true,
         "noFallthroughCasesInSwitch": true,
         "noImplicitReturns": true,
         "noImplicitThis": true,
         "outDir": "dist",
-        "strictNullChecks": true
+        "strictNullChecks": true,
+        "noUnusedLocals": true
     },
     "exclude": [
         "node_modules",

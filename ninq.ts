@@ -244,7 +244,7 @@ export class Ninq<T> implements Iterable<T> {
 			index = 0;
 		if (!isIterable(it)) {
 			if (!predicate) {
-				return it.length;
+				return this.length;
 			}
 			it = ArrayLikeIterable.toIterable(it);
 		}
@@ -1224,6 +1224,13 @@ export class Ninq<T> implements Iterable<T> {
 			: Ninq.last(this.iterable);
 	}
 
+	get length(): number | undefined {
+		if (isIterable(this.iterable)) {
+			return undefined;
+		}
+		return this.iterable.length;
+	}
+
 	/**
 	 * Projects each element of a sequence into a new form by incorporating the element's index
 	 *
@@ -2000,7 +2007,7 @@ export class Ninq<T> implements Iterable<T> {
 
 	// Used for sorted ninq objects.
 	// tslint:disable-next-line
-	private thenBy(comparer: Comparer<T>, descending?: boolean) {
+	protected thenBy(comparer: Comparer<T>, descending?: boolean) {
 		const iterable = this.iterable;
 		if (!isSortedIterable(iterable)) {
 			throw new TypeError('Can only be called with sorted iterables');
