@@ -19,7 +19,7 @@ import { TakeWhileIterable } from './operators/take';
 import { UnionIterable } from './operators/union';
 import { adaptTo } from './modules/object-adapter';
 import ArrayLikeIterable from './modules/array-like-iterable';
-import { isIterable } from './modules/array-like-iterable';
+import { isIterable, isArrayLike } from './modules/array-like-iterable';
 
 /**
  * Provides functionality around iterables.
@@ -242,7 +242,7 @@ export class Ninq<T> implements Iterable<T> {
 	static count<T>(it: Loopable<T>, predicate?: Predicate<T>) {
 		let result = 0,
 			index = 0;
-		if (!isIterable(it)) {
+		if (isArrayLike(it)) {
 			if (!predicate) {
 				return this.length;
 			}
@@ -375,7 +375,7 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	static elementAtOrDefault<T>(it: Loopable<T>, index: number, defValue: T) {
 		let i = 0;
-		if (!isIterable(it)) {
+		if (isArrayLike(it)) {
 			return it.length <= index
 				? defValue
 				: it[index];
@@ -1124,7 +1124,7 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	static lastOrDefault<T>(it: Loopable<T>, defValue: T, predicate: Predicate<T>): T;
 	static lastOrDefault<T>(it: Loopable<T>, defValue: T, predicate?: Predicate<T>) {
-		if (!isIterable(it)) {
+		if (isArrayLike(it)) {
 			if (!predicate) {
 				return it[it.length - 1];
 			}
@@ -1225,7 +1225,7 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	get length(): number | undefined {
-		if (isIterable(this.iterable)) {
+		if (!isArrayLike(this.iterable)) {
 			return undefined;
 		}
 		return this.iterable.length;
@@ -1883,7 +1883,7 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	static some<T>(it: Loopable<T>, prediacte: Predicate<T>): boolean;
 	static some<T>(it: Loopable<T>, prediacte?: Predicate<T>) {
-		if (!isIterable(it)) {
+		if (isArrayLike(it)) {
 			if (!prediacte) {
 				return it.length > 0;
 			}

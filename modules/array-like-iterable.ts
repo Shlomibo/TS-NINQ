@@ -32,3 +32,9 @@ export default class ArrayLikeIterable<T> implements Iterable<T> {
 export function isIterable<T>(obj: any): obj is Iterable<T> {
 	return !!obj && (typeof obj[Symbol.iterator] === 'function');
 }
+export function isArrayLike<T>(obj: any): obj is ArrayLike<T> {
+	return !!obj && (typeof obj.length === 'number') &&
+		(obj.length >= 0) &&
+		(obj.length !== Infinity) &&
+		(Math.floor(obj.length) === obj.length);
+}
