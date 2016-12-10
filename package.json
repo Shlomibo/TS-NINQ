@@ -12,6 +12,10 @@
     "LINQ"
   ],
   "author": "Shlomi Borovitz",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Shlomibo/TS-NINQ.git"
+  },
   "license": "ISC",
   "devDependencies": {
     "@types/jasmine": "^2.5.38",
