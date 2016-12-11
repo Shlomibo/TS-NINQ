@@ -24,6 +24,15 @@
 			"taskName": "build",
 			"args": ["run", "compile"],
 			"problemMatcher": "$tsc"
+		},
+		{
+			"taskName": "develop",
+			"args": [
+				"run",
+				"develop"
+			],
+			"problemMatcher": "$tsc-watch",
+			"isWatching": true
 		}
 	]
 }

@@ -6,7 +6,8 @@
   "scripts": {
     "test": "jasmine",
     "pretest": "node node_modules/typescript/lib/tsc.js",
-    "compile": "node node_modules/typescript/lib/tsc.js"
+    "compile": "node node_modules/typescript/lib/tsc.js",
+    "develop": "node node_modules/typescript/lib/tsc.js -w"
   },
   "keywords": [
     "LINQ"
