@@ -244,7 +244,7 @@ export class Ninq<T> implements Iterable<T> {
 			index = 0;
 		if (isArrayLike(it)) {
 			if (!predicate) {
-				return this.length;
+				return it.length;
 			}
 			it = ArrayLikeIterable.toIterable(it);
 		}
@@ -1126,7 +1126,9 @@ export class Ninq<T> implements Iterable<T> {
 	static lastOrDefault<T>(it: Loopable<T>, defValue: T, predicate?: Predicate<T>) {
 		if (isArrayLike(it)) {
 			if (!predicate) {
-				return it[it.length - 1];
+				return it.length > 0
+					? it[it.length - 1]
+					: defValue;
 			}
 			it = ArrayLikeIterable.toIterable(it);
 		}
