@@ -18,7 +18,7 @@
     "url": "git@github.com:Shlomibo/TS-NINQ.git"
   },
   "license": "ISC",
-  "dependecies": {
+  "dependencies": {
     "@types/jasmine": "^2.5.38",
     "@types/node": "^6.0.50",
     "jasmine": "2.5.2",
