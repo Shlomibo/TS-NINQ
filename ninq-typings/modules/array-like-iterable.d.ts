@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { Loopable } from '../types';
 export default class ArrayLikeIterable<T> implements Iterable<T> {
     private readonly arrayLike;

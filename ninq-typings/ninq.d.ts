@@ -1,9 +1,9 @@
-/// <reference types="node" />
 import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup, Loopable, Generator } from './types';
 import { Grouping } from './operators/group-by';
 import { GroupJoinEntry } from './operators/group-join';
 import { JoinMatch } from './operators/join';
 import { SortedIterable } from './operators/sortBy';
+import { isIterable, isArrayLike } from './modules/array-like-iterable';
 /**
  * Provides functionality around iterables.
  *
@@ -1601,3 +1601,4 @@ export declare class Ninq<T> implements Iterable<T> {
     zip<U>(other: Loopable<U>, throughAll?: boolean): Ninq<[T | undefined, U | undefined]>;
 }
 export default Ninq;
+export { isIterable, isArrayLike };

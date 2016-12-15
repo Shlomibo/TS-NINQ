@@ -152,7 +152,7 @@ describe('Test Base ninq class', () => {
 			expect(Ninq.defaultIfEmpty(it, 0)).toBe(it);
 		});
 		it('Shoud return def value if empty', () => {
-			const it = [];
+			const it: any[] = [];
 			expect(Ninq.defaultIfEmpty(it, Infinity)).toEqual([Infinity]);
 		});
 		it('Shoud return the same ninq if not empty', () => {
@@ -227,7 +227,7 @@ describe('Test Base ninq class', () => {
 
 	describe('Last', () => {
 		const arr = [1, 2, 3],
-			empty = [];
+			empty: any[] = [];
 
 		it('return the last element', () => {
 			expect(Ninq.last(arr)).toBe(3);
@@ -342,7 +342,7 @@ describe('Test Base ninq class', () => {
 	describe('single', () => {
 
 		it('empty seqs', () => {
-			const arr = [];
+			const arr: any[] = [];
 			expect(Ninq.singleOrDefault(arr, Infinity)).toBe(Infinity);
 			expect(() => Ninq.single(arr)).toThrow();
 		});

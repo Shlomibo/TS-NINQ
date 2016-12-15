@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { Mapping } from '../types';
 export declare class MappingIterable<TSource, TResult> implements Iterable<TResult> {
     private readonly iterable;

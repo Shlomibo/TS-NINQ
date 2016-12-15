@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { Comparer, Loopable } from '../types';
 /**
  * An iterable that is sorted

@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { Predicate } from '../types';
 export default class FilterIterable<T> implements Iterable<T> {
     private readonly it;

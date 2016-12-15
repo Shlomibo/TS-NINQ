@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { EqualityComparer } from '../types';
 export default class ExceptIterable<T> implements Iterable<T> {
     private readonly left;

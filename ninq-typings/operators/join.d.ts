@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { KeySelector, EqualityComparer } from '../types';
 export interface JoinMatch<TOuter, TInner> {
     outer: TOuter;

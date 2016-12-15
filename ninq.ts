@@ -2609,3 +2609,7 @@ export class Ninq<T> implements Iterable<T> {
 }
 
 export default Ninq;
+export {
+	isIterable,
+	isArrayLike,
+};

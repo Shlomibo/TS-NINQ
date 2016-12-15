@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { EqualityComparer } from '../types';
 export interface Tracker<T> {
     wasReturned(item: T): boolean;

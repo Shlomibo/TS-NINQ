@@ -7,7 +7,8 @@
     "test": "jasmine",
     "pretest": "node node_modules/typescript/lib/tsc.js",
     "compile": "node node_modules/typescript/lib/tsc.js",
-    "develop": "node node_modules/typescript/lib/tsc.js -w"
+    "develop": "node node_modules/typescript/lib/tsc.js -w",
+    "postinstall": "npm run compile"
   },
   "keywords": [
     "LINQ"
@@ -22,8 +23,8 @@
     "@types/jasmine": "^2.5.38",
     "@types/node": "^6.0.50",
     "jasmine": "2.5.2",
-    "tslint": "4.0.2",
-    "typescript": "2.0.10"
+    "tslint": "4.1.0",
+    "typescript": "2.1.4"
   },
   "typings": "ninq-typings/ninq.d.ts"
 }

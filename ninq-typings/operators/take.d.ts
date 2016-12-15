@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { Predicate } from '../types';
 export declare class TakeWhileIterable<T> implements Iterable<T> {
     private readonly iterable;

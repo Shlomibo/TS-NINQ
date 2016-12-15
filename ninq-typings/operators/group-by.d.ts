@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { KeySelector, EqualityComparer } from '../types';
 export interface Grouping<TKey, TElement> extends Iterable<TElement> {
     readonly key: TKey;

@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { EqualityComparer } from '../types';
 export default class IntersectionIterator<T> implements Iterable<T> {
     private readonly left;
