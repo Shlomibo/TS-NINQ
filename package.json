@@ -4,9 +4,9 @@
   "description": "Implementation of LINQ in typescript",
   "main": "dist/ninq.js",
   "scripts": {
-    "test": "jasmine",
+    "test": "ECHO !!",
     "compile": "tsc -p .",
-    "develop": "node node_modules/typescript/lib/tsc.js -w",
+    "develop": "tsc -w -p .",
     "postinstall": "tsc"
   },
   "keywords": [
