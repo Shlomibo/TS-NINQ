@@ -19,7 +19,6 @@
   },
   "license": "ISC",
   "dependencies": {
-    "@types/jasmine": "^2.5.38",
     "@types/node": "^6.0.50",
     "jasmine": "2.5.2",
     "tslint": "4.1.0",
