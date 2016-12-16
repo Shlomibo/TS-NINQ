@@ -1,7 +1,8 @@
 import { Loopable } from '../types';
 export default class ArrayLikeIterable<T> implements Iterable<T> {
 	constructor(
-		private readonly arrayLike: ArrayLike<T>,
+		protected readonly arrayLike: ArrayLike<T>,
+		readonly startIndex = 0,
 		readonly continious = false
 	) {
 		if (!arrayLike ||
@@ -13,7 +14,7 @@ export default class ArrayLikeIterable<T> implements Iterable<T> {
 
 	*[Symbol.iterator]() {
 		const keys = new Set(Object.keys(this.arrayLike));
-		for (let i = 0; i < this.arrayLike.length; i++) {
+		for (let i = this.startIndex; i < this.arrayLike.length; i++) {
 			if (this.continious ||
 				keys.has(i.toString())) {
 
@@ -26,6 +27,30 @@ export default class ArrayLikeIterable<T> implements Iterable<T> {
 		return isIterable(it)
 			? it
 			: new ArrayLikeIterable(it);
+	}
+}
+
+export class ReverseArrayLikeIterable<T> extends ArrayLikeIterable<T> {
+	constructor(
+		arrayLike: ArrayLike<T>,
+		startIndex?: number,
+		continious?: boolean
+	) {
+		startIndex = typeof startIndex === 'number'
+			? startIndex
+			: arrayLike.length - 1;
+		super(arrayLike, startIndex, continious);
+	}
+
+	*[Symbol.iterator]() {
+		const keys = new Set(Object.keys(this.arrayLike));
+		for (let i = this.startIndex; i >= 0; i++) {
+			if (this.continious ||
+				keys.has(i.toString())) {
+
+				yield this.arrayLike[i];
+			}
+		}
 	}
 }
 

@@ -19,7 +19,7 @@ import { TakeWhileIterable } from './operators/take';
 import { UnionIterable } from './operators/union';
 import { adaptTo } from './modules/object-adapter';
 import ArrayLikeIterable from './modules/array-like-iterable';
-import { isIterable, isArrayLike } from './modules/array-like-iterable';
+import { isIterable, isArrayLike, ReverseArrayLikeIterable } from './modules/array-like-iterable';
 
 /**
  * Provides functionality around iterables.
@@ -1652,7 +1652,9 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static reverse<T>(iterable: Loopable<T>): Iterable<T> {
-		return new ReverseIterable<T>(ArrayLikeIterable.toIterable(iterable));
+		return isArrayLike(iterable)
+			? new ReverseArrayLikeIterable(iterable)
+			: new ReverseIterable<T>(ArrayLikeIterable.toIterable(iterable));
 	}
 
 	/**
@@ -2645,4 +2647,6 @@ export default Ninq;
 export {
 	isIterable,
 	isArrayLike,
+	ArrayLikeIterable,
+	ReverseArrayLikeIterable,
 };
