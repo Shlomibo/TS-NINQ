@@ -1,9 +1,10 @@
-import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup, Loopable, Generator } from './types';
+import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup, Loopable, Generator, Action3, Action } from './types';
 import { Grouping } from './operators/group-by';
 import { GroupJoinEntry } from './operators/group-join';
 import { JoinMatch } from './operators/join';
 import { SortedIterable } from './operators/sortBy';
-import { isIterable, isArrayLike } from './modules/array-like-iterable';
+import ArrayLikeIterable from './modules/array-like-iterable';
+import { isIterable, isArrayLike, ReverseArrayLikeIterable } from './modules/array-like-iterable';
 /**
  * Provides functionality around iterables.
  *
@@ -367,6 +368,8 @@ export declare class Ninq<T> implements Iterable<T> {
      * @memberOf Ninq
      */
     filter(predicate: Predicate<T>): Ninq<T>;
+    forEach(action: Action3<T, number, Action>): void;
+    static forEach<T>(it: Loopable<T>, action: Action3<T, number, Action>): void;
     /**
      * Determines whether all elements of a sequence satisfy a condition
      *
@@ -877,6 +880,15 @@ export declare class Ninq<T> implements Iterable<T> {
      * @memberOf Ninq
      */
     min(valSelector: KeySelector<T, number>): number | undefined;
+    /**
+     * Convert loopable object to Ninq
+     *
+     * @static
+     * @template T - The type of the elements of it
+     * @param {Loopable<T>} - Loopable to convert
+     * @returns {Ninq<T>} - Ninq wrapper for it.
+     */
+    static of<T>(it: Loopable<T>): Ninq<T>;
     /**
      * Generates a sequence of integral numbers within a specified range
      *
@@ -1601,4 +1613,4 @@ export declare class Ninq<T> implements Iterable<T> {
     zip<U>(other: Loopable<U>, throughAll?: boolean): Ninq<[T | undefined, U | undefined]>;
 }
 export default Ninq;
-export { isIterable, isArrayLike };
+export { isIterable, isArrayLike, ArrayLikeIterable, ReverseArrayLikeIterable };
