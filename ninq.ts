@@ -1,5 +1,5 @@
 import ConcatIterable from './operators/concat';
-import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup, Loopable, Generator } from './types';
+import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup, Loopable, Generator, Action3, Action } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
@@ -617,6 +617,23 @@ export class Ninq<T> implements Iterable<T> {
 		return new Ninq(Ninq.filter(this.iterable, predicate));
 	}
 
+	forEach(action: Action3<T, number, Action>): void {
+		Ninq.forEach(this.iterable, action);
+	}
+
+	static forEach<T>(it: Loopable<T>, action: Action3<T, number, Action>): void {
+		let i = 0,
+			cancelled = false,
+			cancel = () => cancelled = true;
+
+		for (let item of ArrayLikeIterable.toIterable(it)) {
+			action(item, i++, cancel);
+
+			if (cancelled) {
+				break;
+			}
+		}
+	}
 
 	/**
 	 * Determines whether all elements of a sequence satisfy a condition
