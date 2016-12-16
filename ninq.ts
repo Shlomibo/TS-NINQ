@@ -117,8 +117,11 @@ export class Ninq<T> implements Iterable<T> {
 	cast<TResult>() {
 		return (this as any) as Ninq<TResult>;
 	}
-	static cast<T, TResult>(it: Iterable<T>) {
-		return (it as any) as Iterable<TResult>;
+
+	static cast<T, TResult>(it: Iterable<T>): Iterable<TResult>;
+	static cast<T, TResult>(it: ArrayLike<T>): ArrayLike<TResult>;
+	static cast<T, TResult>(it: Loopable<T>): Loopable<TResult> {
+		return it as any;
 	}
 
 	/**
