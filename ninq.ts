@@ -1475,6 +1475,20 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
+	 * Convert loopable object to Ninq
+	 *
+	 * @static
+	 * @template T - The type of the elements of it
+	 * @param {Loopable<T>} - Loopable to convert
+	 * @returns {Ninq<T>} - Ninq wrapper for it.
+	 */
+	static of<T>(it: Loopable<T>): Ninq<T> {
+		return it instanceof Ninq
+			? it
+			: new Ninq(it);
+	}
+
+	/**
 	 * Generates a sequence of integral numbers within a specified range
 	 *
 	 * @static
