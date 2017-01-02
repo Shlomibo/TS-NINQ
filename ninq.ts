@@ -1,5 +1,20 @@
 import ConcatIterable from './operators/concat';
-import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, Comparable, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup, Loopable, Generator, Action3, Action } from './types';
+import {
+	KeySelector,
+	Predicate,
+	EqualityComparer,
+	ReductionFunc,
+	Comparer,
+	Comparable,
+	ComparisonFunc,
+	Mapping,
+	Hash,
+	Lookup,
+	NinqLookup,
+	Loopable,
+	Action3,
+	Action
+} from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
@@ -376,7 +391,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static elementAtOrDefault<T>(it: Loopable<T>, index: number, defValue: T) {
+	static elementAtOrDefault<T, U>(it: Loopable<T>, index: number, defValue: U): T | U {
 		let i = 0;
 		if (isArrayLike(it)) {
 			return it.length <= index
@@ -403,7 +418,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static elementAt<T>(it: Loopable<T>, index: number) {
-		const result = Ninq.elementAtOrDefault<T | '\0___ERR___\0'>(it, index, '\0___ERR___\0');
+		const result = Ninq.elementAtOrDefault(it, index, '\0___ERR___\0');
 		if (result === '\0___ERR___\0') {
 			throw new Error('Could not find element');
 		}
@@ -420,8 +435,8 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	elementAtOrDefault(index: number, defValue: T) {
-		return Ninq.elementAtOrDefault<T>(this.iterable, index, defValue);
+	elementAtOrDefault<U>(index: number, defValue: U): T | U {
+		return Ninq.elementAtOrDefault(this.iterable, index, defValue);
 	}
 	/**
 	 * Returns the element at a specified index in a sequence
@@ -432,7 +447,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	elementAt(index: number) {
-		return Ninq.elementAt<T>(this.iterable, index);
+		return Ninq.elementAt(this.iterable, index);
 	}
 
 	/**
@@ -446,55 +461,6 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	static *empty<T>(): Iterable<T> {
 		;
-	}
-
-	/**
-	 * Converts an ES6 generator into an async function that returns a promise.
-	 *
-	 * @static
-	 * @param {Generator<Promise<any>>} generator - The generator to convert
-	 * @returns {(...args: any[]) => Promise<any>} - An async function.
-	 *
-	 * @memberOf Ninq
-	 */
-	static esync(generator: Generator<Promise<any>>): (...args: any[]) => Promise<any> {
-		return (...args) => {
-			const it = generator(...args)[Symbol.iterator]();
-
-			return Promise.resolve()
-				.then(() => iterate(it.next()));
-
-			function iterate(iterationResult: IteratorResult<Promise<any>>)
-				: Promise<any> {
-
-				const { done, value: resultOrPromise } = iterationResult;
-
-				if (done) {
-					return resultOrPromise;
-				}
-				else {
-					return resultOrPromise.then(
-						result => iterate(it.next(result)),
-						err => iterate(it.throw!(err))
-					);
-				}
-			}
-		};
-	}
-
-	/**
-	 * Converts an ES6 generator into an async function that returns a promise, then
-	 * execute it with the provided params.
-	 *
-	 * @static
-	 * @param {Generator<Promise<any>>} generator - The generator to convert
-	 * @param {...any[]} args - Arguments for the async function.
-	 * @returns {Promise<any>} - Returns a promise of the async function.
-	 *
-	 * @memberOf Ninq
-	 */
-	static runEsync(generator: Generator<Promise<any>>, ...args: any[]): Promise<any> {
-		return Ninq.esync(generator)(...args);
 	}
 
 	/**
@@ -541,7 +507,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static firstOrDefault<T>(it: Loopable<T>, defValue: T, predicate?: Predicate<T>): T {
+	static firstOrDefault<T, U>(it: Loopable<T>, defValue: U, predicate?: Predicate<T>): T | U {
 		if (typeof predicate === 'function') {
 			return Ninq.firstOrDefault(Ninq.filter(it, predicate), defValue);
 		}
@@ -559,12 +525,13 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	static first<T>(it: Loopable<T>, predicate?: Predicate<T>) {
-		const result = Ninq.firstOrDefault<T | '\0__ERR__\0'>(it, '\0__ERR__\0', predicate);
+		const result = Ninq.firstOrDefault(it, '\0__ERR__\0', predicate);
 		if (result === '\0__ERR__\0') {
 			throw new RangeError('Iterable is emprty');
 		}
 		return result;
 	}
+
 	/**
 	 * Returns the first element of a sequence, or a default value if the sequence contains no elements.
 	 *
@@ -574,7 +541,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	firstOrDefault(defValue: T, predicate?: Predicate<T>) {
+	firstOrDefault<U>(defValue: U, predicate?: Predicate<T>): T | U {
 		return Ninq.firstOrDefault(this.iterable, defValue, predicate);
 	}
 	/**
@@ -1117,19 +1084,6 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Returns the last element of a sequence, or a default value if the sequence contains no elements
-	 *
-	 * @static
-	 * @template T - The type of the elements of it
-	 * @param {Loopable<T>} it - An Iterable<T> to return the last element of
-	 * @param {T} defValue - Default value to return in case the sequence is empty
-	 * @returns {T} - defValue if the source sequence is empty;
-	 * 	otherwise, the last element in the IEnumerable<T>
-	 *
-	 * @memberOf Ninq
-	 */
-	static lastOrDefault<T>(it: Loopable<T>, defValue: T): T;
-	/**
 	 * Returns the last element of a sequence that satisfies a condition or a default value if no such element is found
 	 *
 	 * @static
@@ -1142,8 +1096,7 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static lastOrDefault<T>(it: Loopable<T>, defValue: T, predicate: Predicate<T>): T;
-	static lastOrDefault<T>(it: Loopable<T>, defValue: T, predicate?: Predicate<T>) {
+	static lastOrDefault<T, U>(it: Loopable<T>, defValue: U, predicate?: Predicate<T>) {
 		if (isArrayLike(it)) {
 			if (!predicate) {
 				return it.length > 0
@@ -1156,7 +1109,7 @@ export class Ninq<T> implements Iterable<T> {
 		if (predicate) {
 			it = Ninq.filter(it, predicate);
 		}
-		let result = defValue;
+		let result: T | U = defValue;
 		for (result of it) {
 			;
 		}
@@ -1164,30 +1117,17 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Returns the last element of a sequence, or a default value if the sequence contains no elements
-	 *
-	 * @param {T} defValue - Default value to return in case the sequence is empty
-	 * @returns {T} - defValue if the source sequence is empty;
-	 * 	otherwise, the last element in the IEnumerable<T>
-	 *
-	 * @memberOf Ninq
-	 */
-	lastOrDefault(defValue: T): T;
-	/**
 	 * Returns the last element of a sequence that satisfies a condition or a default value if no such element is found
 	 *
 	 * @param {T} defValue - Default value to return in case no element satisfies the predicate
-	 * @param {Predicate<T>} predicate - A function to test each element for a condition
+	 * @param {Predicate<T>} [predicate] - A function to test each element for a condition
 	 * @returns {T} - defValue if the sequence is empty or if no elements pass the test in the predicate function;
 	 * 	otherwise, the last element that passes the test in the predicate function
 	 *
 	 * @memberOf Ninq
 	 */
-	lastOrDefault(defValue: T, predicate: Predicate<T>): T;
-	lastOrDefault(defValue: T, predicate?: Predicate<T>) {
-		return predicate
-			? Ninq.lastOrDefault(this.iterable, defValue, predicate)
-			: Ninq.lastOrDefault(this.iterable, defValue);
+	lastOrDefault<U>(defValue: U, predicate?: Predicate<T>): T | U {
+		return Ninq.lastOrDefault(this.iterable, defValue, predicate);
 	}
 
 	/**
@@ -1214,9 +1154,7 @@ export class Ninq<T> implements Iterable<T> {
 	 */
 	static last<T>(it: Loopable<T>, predicate: Predicate<T>): T;
 	static last<T>(it: Loopable<T>, predicate?: Predicate<T>) {
-		const result = predicate
-			? Ninq.lastOrDefault<T | '\0__ERROR__\0'>(it, '\0__ERROR__\0', predicate)
-			: Ninq.lastOrDefault<T | '\0__ERROR__\0'>(it, '\0__ERROR__\0');
+		const result = Ninq.lastOrDefault(it, '\0__ERROR__\0', predicate as any);
 		if (result === '\0__ERROR__\0') {
 			throw new Error('No values returned from iterable');
 		}
