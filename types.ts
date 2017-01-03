@@ -19,9 +19,11 @@ export interface SortedCollection<T> extends Iterable<T> {
 	addRange(this: SortedCollection<T>, items: T[]): void;
 }
 
-export interface Hash<T> {
-	[key: string]: T;
+export interface IndexedHash<Key, Index extends Key> {
+	[key: string]: Key;
+	[index: number]: Index;
 }
+export interface Hash<T> extends IndexedHash<T, T> { }
 
 export interface Lookup<K, V> extends Map<K, Iterable<V>> { }
 export interface NinqLookup<K, V> extends Map<K, Ninq<V>> { }

@@ -2087,6 +2087,41 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
+	 * Splits an iterable into 2 iterables based on a predicate.
+	 *
+	 * @static
+	 * @template T - Iterable's items' type.
+	 * @param {Loopable<T>} it - The iterable to split.
+	 * @param {Predicate<T>} predicate - A predicate to split the iterable by.
+	 * @returns {[Iterable<T>, Iterable<T>]} - A pair of iterables.
+	 * 		The first iterables returns all items that passes the predicate;
+	 *		And the second returns all items that didn't pass the predicate.
+	 *
+	 * @memberOf Ninq
+	 */
+	static split<T>(it: Loopable<T>, predicate: Predicate<T>): [Iterable<T>, Iterable<T>] {
+		return [
+			Ninq.filter(it, predicate),
+			Ninq.filter(it, (item, index) => !predicate(item, index)),
+		];
+	}
+
+	/**
+	 * Splits this iterable into 2 iterables based on a predicate.
+	 *
+	 * @param {Predicate<T>} predicate - A predicate to split the iterable by.
+	 * @returns {[Ninq<T>, Ninq<T>]} - A pair of iterables.
+	 * 		The first iterables returns all items that passes the predicate;
+	 *		And the second returns all items that didn't pass the predicate.
+	 *
+	 * @memberOf Ninq
+	 */
+	split(predicate: Predicate<T>): [Ninq<T>, Ninq<T>] {
+		return Ninq.split(this.iterable, predicate)
+			.map(it => new Ninq(it));
+	}
+
+	/**
 	 * Computes the sum of a sequence of numbers
 	 *
 	 *
