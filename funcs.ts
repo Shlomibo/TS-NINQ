@@ -29,7 +29,7 @@ export function fromCallback<T>(multiArg: boolean)
 			}
 		};
 		handler.then =
-			(onFullfilled: any, onRejected: any) => resolvePromise.then(
+			(onFullfilled: any, onRejected: any) => 	resolvePromise.then(
 				onFullfilled,
 				onRejected
 			);

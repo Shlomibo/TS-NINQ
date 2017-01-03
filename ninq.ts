@@ -2691,7 +2691,10 @@ export class Ninq<T> implements Iterable<T> {
 	}
 }
 export namespace Ninq {
-	export const identity = funcs.identity;
+	export const {
+		identity,
+		fromCallback,
+	} = funcs;
 }
 export default Ninq;
 export {
