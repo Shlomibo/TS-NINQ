@@ -3,10 +3,12 @@ export function identity<T>(x: T): T {
 }
 
 export interface CallbackHandler<T> extends PromiseLike<T> {
-	(this: void, err: any, result: T): void;
+	(this: void, err: any): void;
+	(this: void, err: null | undefined, result: T): void;
 }
 export interface MultiArgCallbackHandler<T> extends PromiseLike<T[]> {
-	(this: void, err: any, ...results: T[]): void;
+	(this: void, err: any): void;
+	(this: void, err: null | undefined, ...results: T[]): void;
 }
 
 export function fromCallback<T>(multiArg?: false): CallbackHandler<T>;
