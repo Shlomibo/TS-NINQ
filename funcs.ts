@@ -20,7 +20,7 @@ export function fromCallback<T>(multiArg = false)
 	let handler: any;
 	const resolvePromise = new Promise((resolve, reject) => {
 		handler = (err: any, ...results: T[]) => {
-			if (err) {
+			if (err != null) {
 				reject(err);
 			}
 			else {
