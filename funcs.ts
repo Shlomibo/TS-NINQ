@@ -9,9 +9,9 @@ export interface MultiArgCallbackHandler<T> extends PromiseLike<T[]> {
 	(this: void, err: any, ...results: T[]): void;
 }
 
-export function fromCallback<T>(multiArg: false): CallbackHandler<T>;
+export function fromCallback<T>(multiArg?: false): CallbackHandler<T>;
 export function fromCallback<T>(multiArg: true): MultiArgCallbackHandler<T>;
-export function fromCallback<T>(multiArg: boolean)
+export function fromCallback<T>(multiArg = false)
 	: CallbackHandler<T> | MultiArgCallbackHandler<T> {
 
 	let handler: any;
