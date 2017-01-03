@@ -35,6 +35,7 @@ import { UnionIterable } from './operators/union';
 import { adaptTo } from './modules/object-adapter';
 import ArrayLikeIterable from './modules/array-like-iterable';
 import { isIterable, isArrayLike, ReverseArrayLikeIterable } from './modules/array-like-iterable';
+import * as funcs from './funcs';
 
 /**
  * Provides functionality around iterables.
@@ -2689,7 +2690,9 @@ export class Ninq<T> implements Iterable<T> {
 		return Ninq.stringify(this.iterable, separator);
 	}
 }
-export * from './funcs';
+export namespace Ninq {
+	export const identity = funcs.identity;
+}
 export default Ninq;
 export {
 	isIterable,
