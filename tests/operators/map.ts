@@ -13,12 +13,12 @@ describe('map', () => {
 describe('map to many', () => {
 
 	it('maps to many', () => {
-		const [...result] = Ninq.mapMany([[1], [2], [3]], x => x.toString());
+		const [...result] = Ninq.flatMap([[1], [2], [3]], x => x.toString());
 		expect(result).toEqual(['1', '2', '3']);
 	});
 
 	it('maps to many by selection', () => {
-		const [...result] = Ninq.mapMany(
+		const [...result] = Ninq.flatMap(
 			['123', '456'],
 			x => x.split(''),
 			x => Number.parseInt(x)

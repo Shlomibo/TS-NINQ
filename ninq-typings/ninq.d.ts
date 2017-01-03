@@ -1,4 +1,4 @@
-import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup, Loopable, Generator, Action3, Action } from './types';
+import { KeySelector, Predicate, EqualityComparer, ReductionFunc, Comparer, ComparisonFunc, Mapping, Hash, Lookup, NinqLookup, Loopable, Action3, Action } from './types';
 import { Grouping } from './operators/group-by';
 import { GroupJoinEntry } from './operators/group-join';
 import { JoinMatch } from './operators/join';
@@ -64,6 +64,7 @@ export declare class Ninq<T> implements Iterable<T> {
      */
     cast<TResult>(): Ninq<TResult>;
     static cast<T, TResult>(it: Iterable<T>): Iterable<TResult>;
+    static cast<T, TResult>(it: ArrayLike<T>): ArrayLike<TResult>;
     /**
      * Return a concatination of this sequence and the provided sequences.
      *
@@ -200,10 +201,24 @@ export declare class Ninq<T> implements Iterable<T> {
      */
     distinct(comparer?: EqualityComparer<T>): Ninq<T>;
     /**
+     * Returns the element at a specified index in a sequence or undefined
+     *
+     * @static
+     * @template T - Itrable's elements' type
+     * @param {Loopable<T>} it - Iterable to calculate avg for
+     * @param {number} index The zero-based index of the element to retrieve
+     * @returns undefined if the index is outside the bounds of the source sequence;
+     * 	otherwise, the element at the specified position in the source sequence
+     *
+     * @memberOf Ninq
+     */
+    static elementAtOrDefault<T>(it: Loopable<T>, index: number): T | undefined;
+    /**
      * Returns the element at a specified index in a sequence or a default value if the index is out of range
      *
      * @static
      * @template T - Itrable's elements' type
+     * @template U - Default value's type
      * @param {Loopable<T>} it - Iterable to calculate avg for
      * @param {number} index The zero-based index of the element to retrieve
      * @param {T} defValue The value to return if index is out of range
@@ -212,7 +227,7 @@ export declare class Ninq<T> implements Iterable<T> {
      *
      * @memberOf Ninq
      */
-    static elementAtOrDefault<T>(it: Loopable<T>, index: number, defValue: T): T;
+    static elementAtOrDefault<T, U>(it: Loopable<T>, index: number, defValue: U): T | U;
     /**
      * Returns the element at a specified index in a sequence
      *
@@ -226,17 +241,28 @@ export declare class Ninq<T> implements Iterable<T> {
      */
     static elementAt<T>(it: Loopable<T>, index: number): T;
     /**
+     * Returns the element at a specified index in a sequence or undefined if the index is out of range
+     *
+     * @param {number} index The zero-based index of the element to retrieve
+     * @returns undefindef if the index is outside the bounds of the source sequence;
+     * 	otherwise, the element at the specified position in the source sequence
+     *
+     * @memberOf Ninq
+     */
+    elementAtOrDefault(index: number): T | undefined;
+    /**
      * Returns the element at a specified index in a sequence or a default value if the index is out of range
      *
      *
+     * @template U - Default value's type
      * @param {number} index The zero-based index of the element to retrieve
-     * @param {T} defValue The value to return if index is out of range
+     * @param {U} defValue The value to return if index is out of range
      * @returns default(TSource) if the index is outside the bounds of the source sequence;
      * 	otherwise, the element at the specified position in the source sequence
      *
      * @memberOf Ninq
      */
-    elementAtOrDefault(index: number, defValue: T): T;
+    elementAtOrDefault<U>(index: number, defValue: U): T | U;
     /**
      * Returns the element at a specified index in a sequence
      *
@@ -256,28 +282,6 @@ export declare class Ninq<T> implements Iterable<T> {
      * @memberOf Ninq
      */
     static empty<T>(): Iterable<T>;
-    /**
-     * Converts an ES6 generator into an async function that returns a promise.
-     *
-     * @static
-     * @param {Generator<Promise<any>>} generator - The generator to convert
-     * @returns {(...args: any[]) => Promise<any>} - An async function.
-     *
-     * @memberOf Ninq
-     */
-    static esync(generator: Generator<Promise<any>>): (...args: any[]) => Promise<any>;
-    /**
-     * Converts an ES6 generator into an async function that returns a promise, then
-     * execute it with the provided params.
-     *
-     * @static
-     * @param {Generator<Promise<any>>} generator - The generator to convert
-     * @param {...any[]} args - Arguments for the async function.
-     * @returns {Promise<any>} - Returns a promise of the async function.
-     *
-     * @memberOf Ninq
-     */
-    static runEsync(generator: Generator<Promise<any>>, ...args: any[]): Promise<any>;
     /**
      * Produces the set difference of two sequences by using the specified IEqualityComparer<T> to compare values
      *
@@ -304,10 +308,24 @@ export declare class Ninq<T> implements Iterable<T> {
      */
     except(other: Loopable<T>, comparer?: EqualityComparer<T>): Ninq<T>;
     /**
+     * Returns the first element of a sequence, or undefined if the sequence contains no elements.
+     *
+     *
+     * @static
+     * @template T - Itrable's elements' type
+     * @param {Loopable<T>} it - Iterable to calculate avg for
+     * @param {Predicate<T>} [predicate] - A function to test each element for a condition
+     * @returns undefined if source is empty; otherwise, the first element in source
+     *
+     * @memberOf Ninq
+     */
+    static firstOrDefault<T>(it: Loopable<T>, predicate?: Predicate<T>): T | undefined;
+    /**
      * Returns the first element of a sequence, or a default value if the sequence contains no elements.
      *
      * @static
      * @template T - Itrable's elements' type
+     * @template U - Default value's type
      * @param {Loopable<T>} it - Iterable to calculate avg for
      * @param {T} defValue
      * @param {Predicate<T>} [predicate] - A function to test each element for a condition
@@ -315,7 +333,7 @@ export declare class Ninq<T> implements Iterable<T> {
      *
      * @memberOf Ninq
      */
-    static firstOrDefault<T>(it: Loopable<T>, defValue: T, predicate?: Predicate<T>): T;
+    static firstOrDefault<T, U>(it: Loopable<T>, defValue: U, predicate?: Predicate<T>): T | U;
     /**
      * Returns the first element in a sequence that satisfies a specified condition
      *
@@ -329,15 +347,25 @@ export declare class Ninq<T> implements Iterable<T> {
      */
     static first<T>(it: Loopable<T>, predicate?: Predicate<T>): T;
     /**
+     * Returns the first element of a sequence, or undefined if the sequence contains no elements.
+     *
+     * @param {Predicate<T>} [predicate] - A function to test each element for a condition
+     * @returns undefined if source is empty; otherwise, the first element in source
+     *
+     * @memberOf Ninq
+     */
+    firstOrDefault(predicate?: Predicate<T>): T | undefined;
+    /**
      * Returns the first element of a sequence, or a default value if the sequence contains no elements.
      *
-     * @param {T} defValue
+     * @template U - Default value's type
+     * @param {U} defValue
      * @param {Predicate<T>} [predicate] - A function to test each element for a condition
      * @returns defValue if source is empty; otherwise, the first element in source
      *
      * @memberOf Ninq
      */
-    firstOrDefault(defValue: T, predicate?: Predicate<T>): T;
+    firstOrDefault<U>(defValue: U, predicate?: Predicate<T>): T | U;
     /**
      * Returns the first element in a sequence that satisfies a specified condition
      *
@@ -624,53 +652,45 @@ export declare class Ninq<T> implements Iterable<T> {
      */
     join<TOther, TKey>(other: Loopable<TOther>, keySelector: KeySelector<T, TKey>, otherKeySelector: KeySelector<TOther, TKey>, comparer?: EqualityComparer<TKey>): Ninq<JoinMatch<T, TOther>>;
     /**
-     * Returns the last element of a sequence, or a default value if the sequence contains no elements
+     * Returns the last element of a sequence that satisfies a condition or undefined if no such element is found
      *
      * @static
      * @template T - The type of the elements of it
      * @param {Loopable<T>} it - An Iterable<T> to return the last element of
-     * @param {T} defValue - Default value to return in case the sequence is empty
-     * @returns {T} - defValue if the source sequence is empty;
-     * 	otherwise, the last element in the IEnumerable<T>
+     * @param {Predicate<T>} [predicate] - A function to test each element for a condition
+     * @returns - undefined if the sequence is empty or if no elements pass the test in the predicate function;
+     * 	otherwise, the last element that passes the test in the predicate function
      *
      * @memberOf Ninq
      */
-    static lastOrDefault<T>(it: Loopable<T>, defValue: T): T;
+    static lastOrDefault<T>(it: Loopable<T>, predicate?: Predicate<T>): T | undefined;
     /**
      * Returns the last element of a sequence that satisfies a condition or a default value if no such element is found
      *
      * @static
      * @template T - The type of the elements of it
+     * @template U - Default value's type
      * @param {Loopable<T>} it - An Iterable<T> to return the last element of
      * @param {T} defValue - Default value to return in case no element satisfies the predicate
-     * @param {Predicate<T>} predicate - A function to test each element for a condition
-     * @returns {T} - defValue if the sequence is empty or if no elements pass the test in the predicate function;
+     * @param {Predicate<T>} [predicate] - A function to test each element for a condition
+     * @returns - defValue if the sequence is empty or if no elements pass the test in the predicate function;
      * 	otherwise, the last element that passes the test in the predicate function
      *
      * @memberOf Ninq
      */
-    static lastOrDefault<T>(it: Loopable<T>, defValue: T, predicate: Predicate<T>): T;
-    /**
-     * Returns the last element of a sequence, or a default value if the sequence contains no elements
-     *
-     * @param {T} defValue - Default value to return in case the sequence is empty
-     * @returns {T} - defValue if the source sequence is empty;
-     * 	otherwise, the last element in the IEnumerable<T>
-     *
-     * @memberOf Ninq
-     */
-    lastOrDefault(defValue: T): T;
+    static lastOrDefault<T, U>(it: Loopable<T>, defValue: U, predicate?: Predicate<T>): T | U;
+    lastOrDefault(predicate?: Predicate<T>): T | undefined;
     /**
      * Returns the last element of a sequence that satisfies a condition or a default value if no such element is found
      *
      * @param {T} defValue - Default value to return in case no element satisfies the predicate
-     * @param {Predicate<T>} predicate - A function to test each element for a condition
+     * @param {Predicate<T>} [predicate] - A function to test each element for a condition
      * @returns {T} - defValue if the sequence is empty or if no elements pass the test in the predicate function;
      * 	otherwise, the last element that passes the test in the predicate function
      *
      * @memberOf Ninq
      */
-    lastOrDefault(defValue: T, predicate: Predicate<T>): T;
+    lastOrDefault<U>(defValue: U, predicate?: Predicate<T>): T | U;
     /**
      * Returns the last element of a sequence
      *
@@ -751,7 +771,7 @@ export declare class Ninq<T> implements Iterable<T> {
      *
      * @memberOf Ninq
      */
-    static mapMany<T, TResult>(it: Loopable<Loopable<T>>, mapping: Mapping<T, TResult>): Iterable<TResult>;
+    static flatMap<T, TResult>(it: Loopable<Loopable<T>>, mapping: Mapping<T, TResult>): Iterable<TResult>;
     /**
      * Projects each element of a sequence to an Iterable<TCollection>,
      * 	flattens the resulting sequences into one sequence, and invokes a result selector function on each element therein.
@@ -771,7 +791,7 @@ export declare class Ninq<T> implements Iterable<T> {
      *
      * @memberOf Ninq
      */
-    static mapMany<T, TCollection, TResult>(it: Loopable<T>, sequenceMapping: Mapping<T, Iterable<TCollection>>, resultMapping: Mapping<TCollection, TResult>): Iterable<TResult>;
+    static flatMap<T, TCollection, TResult>(it: Loopable<T>, sequenceMapping: Mapping<T, Iterable<TCollection>>, resultMapping: Mapping<TCollection, TResult>): Iterable<TResult>;
     /**
      * Flattens the sequences into one sequence, and invokes a result selector function on each element therein.
      * 	The index of each source element is used in the intermediate projected form of that element
@@ -783,7 +803,7 @@ export declare class Ninq<T> implements Iterable<T> {
      *
      * @memberOf Ninq
      */
-    mapMany<TResult>(mapping: Mapping<any, TResult>): Ninq<TResult>;
+    flatMap<TResult>(mapping: Mapping<any, TResult>): Ninq<TResult>;
     /**
      * Projects each element of a sequence to an Iterable<TCollection>,
      * 	flattens the resulting sequences into one sequence, and invokes a result selector function on each element therein.
@@ -801,7 +821,7 @@ export declare class Ninq<T> implements Iterable<T> {
      *
      * @memberOf Ninq
      */
-    mapMany<TCollection, TResult>(sequenceMapping: Mapping<T, Iterable<TCollection>>, resultMapping: Mapping<TCollection, TResult>): Ninq<TResult>;
+    flatMap<TCollection, TResult>(sequenceMapping: Mapping<T, Iterable<TCollection>>, resultMapping: Mapping<TCollection, TResult>): Ninq<TResult>;
     /**
      * Returns the maximum value in a sequence
      *
@@ -1611,6 +1631,8 @@ export declare class Ninq<T> implements Iterable<T> {
      * @memberOf Ninq
      */
     zip<U>(other: Loopable<U>, throughAll?: boolean): Ninq<[T | undefined, U | undefined]>;
+    static stringify<T>(it: Loopable<T>, separator?: string): string;
+    stringify(separator?: string): string;
 }
 export default Ninq;
 export { isIterable, isArrayLike, ArrayLikeIterable, ReverseArrayLikeIterable };
