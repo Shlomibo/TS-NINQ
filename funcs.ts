@@ -2,12 +2,13 @@ export function identity<T>(x: T): T {
 	return x;
 }
 
+export type Reason = {} | number | string | boolean | symbol;
 export interface CallbackHandler<T> extends PromiseLike<T> {
-	(this: void, err: any): void;
+	(this: void, err: Reason): void;
 	(this: void, err: null | undefined, result: T): void;
 }
 export interface MultiArgCallbackHandler<T> extends PromiseLike<T[]> {
-	(this: void, err: any): void;
+	(this: void, err: Reason): void;
 	(this: void, err: null | undefined, ...results: T[]): void;
 }
 
