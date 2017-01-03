@@ -2689,7 +2689,7 @@ export class Ninq<T> implements Iterable<T> {
 		return Ninq.stringify(this.iterable, separator);
 	}
 }
-
+import './funcs';
 export default Ninq;
 export {
 	isIterable,
