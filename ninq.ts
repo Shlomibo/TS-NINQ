@@ -39,6 +39,7 @@ import { isIterable, isArrayLike, ReverseArrayLikeIterable } from './modules/arr
 import * as funcs from './funcs';
 import { TraverseMapping, FirstTraverseMapping, LaterTraverseMapping } from './tests/operators/traverse';
 import TraversingIterable from './tests/operators/traverse';
+import { Hash, IndexedHash } from './types';
 
 /**
  * Provides functionality around iterables.
@@ -2794,4 +2795,6 @@ export {
 	TraverseMapping,
 	FirstTraverseMapping,
 	LaterTraverseMapping,
+	Hash,
+	IndexedHash,
 };
