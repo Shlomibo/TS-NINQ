@@ -1593,16 +1593,20 @@ export class Ninq<T> implements Iterable<T> {
 	 * @template T - The type of the value to be repeated in the result sequence
 	 * @param {T} element - The value to be repeated
 	 * @param {number} count - The number of times to repeat the value in the generated sequence
-	 * @returns {Iterable<T>} - An Iterable<T> that contains a repeated value
+	 * @returns {Ninq<T>} - An Iterable<T> that contains a repeated value
 	 *
 	 * @memberOf Ninq
 	 */
-	static * repeat<T>(element: T, count: number) {
+	static repeat<T>(element: T, count: number): Ninq<T> {
 		if (count < 0) {
 			throw new Error('count must be greater or equal to zero');
 		}
-		for (let i = 0; i < count; i++) {
-			yield element;
+
+		return new Ninq(generator());
+		function* generator() {
+			for (let i = 0; i < count; i++) {
+				yield element;
+			}
 		}
 	}
 
