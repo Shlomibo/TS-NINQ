@@ -205,6 +205,7 @@ export class Ninq<T> implements Iterable<T> {
 					(value as any).length >= 0);
 		}
 	}
+
 	/**
 	 * Return a concatination of this sequence and the provided sequences.
 	 *
@@ -231,6 +232,23 @@ export class Ninq<T> implements Iterable<T> {
 			Ninq.concat<T>(
 				this.iterable,
 				...ArrayLikeIterable.toIterable(realLoopables)
+			)
+		);
+	}
+
+	/**
+	 * Return a concatination of this sequence and the provided sequences.
+	 *
+	 * @param {...Iterable<T>[]} iterables - Iterable to concat to this sequence.
+	 * @returns {Ninq<T>} A concatination of this sequence and the provided sequences
+	 *
+	 * @memberOf Ninq
+	 */
+	concatTo(iterable: Loopable<T>): Ninq<T> {
+		return new Ninq<T>(
+			Ninq.concat(
+				iterable,
+				ArrayLikeIterable.toIterable(this.iterable),
 			)
 		);
 	}
