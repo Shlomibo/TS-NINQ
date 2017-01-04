@@ -13,7 +13,8 @@ import {
 	NinqLookup,
 	Loopable,
 	Action3,
-	Action
+	Action,
+	NotNull,
 } from './types';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
@@ -2755,4 +2756,5 @@ export {
 	isArrayLike,
 	ArrayLikeIterable,
 	ReverseArrayLikeIterable,
+	NotNull,
 };
