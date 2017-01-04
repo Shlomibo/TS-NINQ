@@ -2,6 +2,7 @@
 export interface FirstTraverseMapping<T> {
 	current: T;
 	index: number;
+	previous: undefined;
 	first: true;
 }
 export interface LaterTraverseMapping<T> {
