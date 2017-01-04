@@ -37,6 +37,8 @@ import { adaptTo } from './modules/object-adapter';
 import ArrayLikeIterable from './modules/array-like-iterable';
 import { isIterable, isArrayLike, ReverseArrayLikeIterable } from './modules/array-like-iterable';
 import * as funcs from './funcs';
+import { TraverseMapping } from './tests/operators/traverse';
+import TraversingIterable from './tests/operators/traverse';
 
 /**
  * Provides functionality around iterables.
@@ -2657,6 +2659,34 @@ export class Ninq<T> implements Iterable<T> {
 			}
 			return result;
 		}
+	}
+
+	/**
+	 * Traverses consequencing element of an iterable
+	 *
+	 * @static
+	 * @template T - The type of the elements of the input sequences
+	 * @param {Loopable<T>} it - The iterable to traverse on
+	 * @returns {Iterable<TraverseMapping<T>>} - An iterable that provides each two consequencing elements
+	 *
+	 * @memberOf Ninq
+	 */
+	static traverse<T>(it: Loopable<T>): Iterable<TraverseMapping<T>> {
+		it = ArrayLikeIterable.toIterable(it);
+		return new TraversingIterable(it);
+	}
+
+	/**
+	 * Traverses consequencing element of the iterable
+	 *
+	 * @returns {Ninq<TraverseMapping<T>>} - A Ninq iterable that provides each two consequencing elements
+	 *
+	 * @memberOf Ninq
+	 */
+	traverse(): Ninq<TraverseMapping<T>> {
+		return new Ninq(
+			Ninq.traverse(this.iterable)
+		);
 	}
 
 	/**
