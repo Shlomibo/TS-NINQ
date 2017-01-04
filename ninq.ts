@@ -37,7 +37,7 @@ import { adaptTo } from './modules/object-adapter';
 import ArrayLikeIterable from './modules/array-like-iterable';
 import { isIterable, isArrayLike, ReverseArrayLikeIterable } from './modules/array-like-iterable';
 import * as funcs from './funcs';
-import { TraverseMapping } from './tests/operators/traverse';
+import { TraverseMapping, FirstTraverseMapping, LaterTraverseMapping } from './tests/operators/traverse';
 import TraversingIterable from './tests/operators/traverse';
 
 /**
@@ -2787,4 +2787,7 @@ export {
 	ArrayLikeIterable,
 	ReverseArrayLikeIterable,
 	NotNull,
+	TraverseMapping,
+	FirstTraverseMapping,
+	LaterTraverseMapping,
 };
