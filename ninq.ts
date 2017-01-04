@@ -154,60 +154,9 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	static concat<T>(first: Loopable<T>, ...iterables: Loopable<T>[]): Iterable<T>;
-	/**
-	 * Return a concatination of this sequence and the provided sequences.
-	 *
-	 * @static
-	 * @template T - Itrable's elements' type
-	 * @param {Loopable<Loopable<T>>} iterables - Iterable to concat to this sequence.
-	 * @returns {Iterable<T>} A concatination of this sequence and the provided sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	static concat<T>(iterables: Loopable<Loopable<T>>): Iterable<T>;
-	static concat<T>(
-		firstOrIterables: Loopable<T> | Loopable<Loopable<T>>,
-		...others: (Loopable<T> | Loopable<Loopable<T>>)[]
-	) {
-		let realIterables: Loopable<Loopable<T>>;
-		if (Ninq.isLoopableOfLoopables<T>(firstOrIterables)) {
-			realIterables = firstOrIterables;
-		}
-		else {
-			others.unshift(firstOrIterables);
-			realIterables = others as any;
-		}
-		return new ConcatIterable(Ninq.map(realIterables, ArrayLikeIterable.toIterable));
-	}
-
-	private static isLoopableOfLoopables<T>(iterable?: Loopable<T> | Loopable<Loopable<T>>)
-		: iterable is Loopable<Loopable<T>> {
-
-		if (iterable && !isIterable(iterable)) {
-			return !!iterable[0] &&
-				isLoopable(iterable[0]);
-		}
-		else if (iterable) {
-			const iterator = iterable[Symbol.iterator](),
-				{value, done} = iterator.next();
-			try {
-				return !done &&
-					isLoopable(value);
-			}
-			finally {
-				iterator &&
-					iterator.return &&
-					iterator.return(undefined);
-			}
-		}
-		return false;
-
-		function isLoopable(value: any): boolean {
-			return value &&
-				(typeof (value as any)[Symbol.iterator] === 'function' ||
-					(value as any).length >= 0);
-		}
+	static concat<T>(first: Loopable<T>, ...iterables: Loopable<T>[]): Iterable<T> {
+		iterables.unshift(first);
+		return new ConcatIterable(Ninq.map(iterables, ArrayLikeIterable.toIterable));
 	}
 
 	/**
@@ -218,24 +167,12 @@ export class Ninq<T> implements Iterable<T> {
 	 *
 	 * @memberOf Ninq
 	 */
-	concat(...iterables: Loopable<T>[]): Ninq<T>;
-	/**
-	 * Return a concatination of this sequence and the provided sequences.
-	 *
-	 * @param {Iterable<Iterable<T>>} iterables - Iterable to concat to this sequence.
-	 * @returns {Ninq<T>} A concatination of this sequence and the provided sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	concat(iterables: Loopable<Loopable<T>>): Ninq<T>;
-	concat(...iterables: (Loopable<T> | Loopable<Loopable<T>>)[]) {
-		const realLoopables = Ninq.isLoopableOfLoopables<T>(iterables[0])
-			? iterables[0] as Loopable<Loopable<T>>
-			: iterables as Loopable<Loopable<T>>;
+	concat(other: Loopable<T>, ...rest: Loopable<T>[]): Ninq<T> {
+		rest.unshift(other);
 		return new Ninq(
 			Ninq.concat<T>(
 				this.iterable,
-				...ArrayLikeIterable.toIterable(realLoopables)
+				...Ninq.map(rest, ArrayLikeIterable.toIterable)
 			)
 		);
 	}
