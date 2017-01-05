@@ -18,7 +18,7 @@
 		{
 			"taskName": "test",
 			"args": ["run", "test"],
-			"problemMatcher": "$tsc"
+			"isWatching": false
 		},
 		{
 			"taskName": "build",

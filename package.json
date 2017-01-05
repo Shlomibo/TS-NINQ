@@ -4,7 +4,7 @@
   "description": "Implementation of LINQ in typescript",
   "main": "dist/ninq.js",
   "scripts": {
-    "test": "ECHO !!",
+    "test": "jasmine",
     "compile": "tsc -p .",
     "develop": "tsc -w -p .",
     "postinstall": "tsc"
@@ -20,9 +20,13 @@
   "license": "ISC",
   "dependencies": {
     "@types/node": "^6.0.50",
-    "jasmine": "2.5.2",
     "tslint": "4.1.0",
     "typescript": "2.1.4"
+  },
+  "devDependencies": {
+    "@types/jasmine": "^2.5.40",
+    "jasmine": "2.5.2",
+    "jasmine-console-reporter": "^1.2.7"
   },
   "typings": "ninq-typings/ninq.d.ts"
 }

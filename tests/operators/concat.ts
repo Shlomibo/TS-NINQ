@@ -18,7 +18,11 @@ describe('Concat tests', () => {
 		expect(result).toEqual(all);
 	});
 	it('Static concat iterable', () => {
-		const [...result] = Ninq.concat(arrs);
+		const [
+			firstIt,
+			...rest
+		] = arrs;
+		const [...result] = Ninq.concat(firstIt, ...rest);
 		expect(result).toEqual(all);
 	});
 

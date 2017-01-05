@@ -44,7 +44,7 @@ export class ReverseArrayLikeIterable<T> extends ArrayLikeIterable<T> {
 
 	*[Symbol.iterator]() {
 		const keys = new Set(Object.keys(this.arrayLike));
-		for (let i = this.startIndex; i >= 0; i++) {
+		for (let i = this.startIndex; i >= 0; i--) {
 			if (this.continious ||
 				keys.has(i.toString())) {
 

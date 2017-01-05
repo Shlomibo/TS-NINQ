@@ -38,8 +38,10 @@ import { adaptTo } from './modules/object-adapter';
 import ArrayLikeIterable from './modules/array-like-iterable';
 import { isIterable, isArrayLike, ReverseArrayLikeIterable } from './modules/array-like-iterable';
 import * as funcs from './funcs';
-import { TraverseMapping, FirstTraverseMapping, LaterTraverseMapping } from './tests/operators/traverse';
-import TraversingIterable from './tests/operators/traverse';
+import { TraverseMapping, FirstTraverseMapping, LaterTraverseMapping } from './operators/traverse';
+import TraversingIterable from './operators/traverse';
+import { Entry, ObjectIterationOptions } from './operators/object';
+import ObjectIterable from './operators/object';
 
 /**
  * Provides functionality around iterables.
@@ -1486,6 +1488,8 @@ export class Ninq<T> implements Iterable<T> {
 			: Ninq.min(this.iterable as any);
 	}
 
+	static of<T>(it: Loopable<T>): Ninq<T>;
+	static of(obj: {}, options?: ObjectIterationOptions): Ninq<Entry>;
 	/**
 	 * Convert loopable object to Ninq
 	 *
@@ -1494,10 +1498,16 @@ export class Ninq<T> implements Iterable<T> {
 	 * @param {Loopable<T>} - Loopable to convert
 	 * @returns {Ninq<T>} - Ninq wrapper for it.
 	 */
-	static of<T>(it: Loopable<T>): Ninq<T> {
-		return it instanceof Ninq
-			? it
-			: new Ninq(it);
+	static of(obj: {}, options?: ObjectIterationOptions): Ninq<any> {
+		return obj instanceof Ninq
+			? obj
+			: isIterable(obj) || isArrayLike(obj)
+				? new Ninq(obj)
+				: new Ninq(new ObjectIterable(obj, options));
+	}
+
+	static entriesOf(obj: {}, options?: ObjectIterationOptions): Iterable<Entry> {
+		return new ObjectIterable(obj, options);
 	}
 
 	/**
