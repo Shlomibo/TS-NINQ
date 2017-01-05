@@ -63,18 +63,14 @@ export class ObjectIterable implements Iterable<Entry> {
 	}
 
 	*values(): IterableIterator<any> {
-		const symbolsOnly = !this.hasFlag(ObjectIterationOptions.readableProperties);
-
 		for (let entry of this) {
 			switch (entry.type) {
 				case EntryType.property: {
-					if (!symbolsOnly) {
-						if (entry.descriptor.get) {
-							yield entry.descriptor.get.call(this.obj);
-						}
-						else if (!entry.descriptor.set) {
-							yield entry.descriptor.value;
-						}
+					if (entry.descriptor.get) {
+						yield entry.descriptor.get.call(this.obj);
+					}
+					else if (!entry.descriptor.set) {
+						yield entry.descriptor.value;
 					}
 					break;
 				}

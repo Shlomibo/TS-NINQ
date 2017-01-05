@@ -1489,7 +1489,10 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	static of<T>(it: Loopable<T>): Ninq<T>;
-	static of(obj: {}, options?: ObjectIterationOptions): Ninq<Entry>;
+	static of(obj: {}, options?: ObjectIterationOptions)
+		: Ninq<Entry> & {
+			values(this: Ninq<Entry>): Ninq<any>,
+		};
 	/**
 	 * Convert loopable object to Ninq
 	 *
@@ -1508,6 +1511,18 @@ export class Ninq<T> implements Iterable<T> {
 
 	static entriesOf(obj: {}, options?: ObjectIterationOptions): Iterable<Entry> {
 		return new ObjectIterable(obj, options);
+	}
+
+	static valuesOf(obj: {}, options?: ObjectIterationOptions): Iterable<any> {
+		return new ObjectIterable(obj, options)
+			.values();
+	}
+
+	protected values(): Ninq<any> {
+		if (!(this.iterable instanceof ObjectIterable)) {
+			throw new Error('Not implemented');
+		}
+		return new Ninq(this.iterable.values());
 	}
 
 	/**
