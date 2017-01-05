@@ -21,9 +21,7 @@
   "dependencies": {
     "@types/node": "^6.0.50",
     "tslint": "4.1.0",
-    "typescript": "2.1.4"
-  },
-  "devDependencies": {
+    "typescript": "2.1.4",
     "@types/jasmine": "^2.5.40",
     "jasmine": "2.5.2",
     "jasmine-console-reporter": "^1.2.7"
