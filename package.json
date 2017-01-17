@@ -2,7 +2,7 @@
   "name": "ts-ninq",
   "version": "0.1.1",
   "description": "Implementation of LINQ in typescript",
-  "main": "dist/ninq.js",
+  "main": "dist/core/ninq.js",
   "scripts": {
     "test": "jasmine",
     "compile": "tsc -p .",
