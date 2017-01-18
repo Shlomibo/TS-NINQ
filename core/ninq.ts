@@ -469,37 +469,6 @@ export class Ninq<T> implements Iterable<T> {
 		return Ninq.first(this.iterable, predicate);
 	}
 
-	/**
-	 * Filters a sequence of values based on a predicate
-	 *
-	 * @static
-	 * @template T
-	 * @param {Loopable<T>} it - An Iterable<T> to filter
-	 * @param {Predicate<T>} predicate - A function to test each element for a condition.
-	 * @returns {Iterable<T>} - An Iterable<T> that contains elements from the input sequence that satisfy the condition
-	 *
-	 * @memberOf Ninq
-	 */
-	static filter<T>(it: Loopable<T>, predicate: Predicate<T>)
-		: Iterable<T> {
-
-		return new FilterIterable(
-			ArrayLikeIterable.toIterable(it),
-			predicate
-		);
-	}
-	/**
-	 * Filters the sequence of values based on a predicate
-	 *
-	 * @param {Predicate<T>} predicate - A function to test each element for a condition.
-	 * @returns - - A Ninq<T> that contains elements from the input sequence that satisfy the condition
-	 *
-	 * @memberOf Ninq
-	 */
-	filter(predicate: Predicate<T>) {
-		return new Ninq(Ninq.filter(this.iterable, predicate));
-	}
-
 	forEach(action: Action3<T, number, Action>): void {
 		Ninq.forEach(this.iterable, action);
 	}
