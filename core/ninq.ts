@@ -16,7 +16,7 @@ import {
 	Action,
 	NotNull,
 	IndexedHash,
-} from './types';
+} from './declarations';
 import DistinctIterable from './operators/distinct';
 import ExceptIterable from './operators/except';
 import FilterIterable from './operators/filter';
@@ -42,6 +42,13 @@ import { TraverseMapping, FirstTraverseMapping, LaterTraverseMapping } from './o
 import TraversingIterable from './operators/traverse';
 import { Entry, ObjectIterationOptions } from './operators/object';
 import ObjectIterable from './operators/object';
+import symbols from './symbols';
+import { isLoopable } from './array-like-iterable';
+
+const {
+	iterable,
+} = symbols;
+
 
 /**
  * Provides functionality around iterables.
@@ -52,11 +59,15 @@ import ObjectIterable from './operators/object';
  * @template T
  */
 export class Ninq<T> implements Iterable<T> {
-	constructor(private readonly iterable: Loopable<T>) {
+	constructor(it: Loopable<T>) {
+		if (!isLoopable(it)) {
+			throw new TypeError('Not an iterable');
+		}
+		this[iterable] = it;
 	}
 
 	*[Symbol.iterator]() {
-		const it = ArrayLikeIterable.toIterable(this.iterable);
+		const it = ArrayLikeIterable.toIterable(this[iterable]);
 		yield* it;
 	}
 
@@ -100,7 +111,7 @@ export class Ninq<T> implements Iterable<T> {
 	 * @memberOf Ninq
 	 */
 	average(selector: KeySelector<T, number>) {
-		return Ninq.average(this.iterable, selector);
+		return Ninq.average(this[iterable], selector);
 	}
 
 	/**
@@ -144,56 +155,6 @@ export class Ninq<T> implements Iterable<T> {
 	static cast<T, TResult>(it: ArrayLike<T>): ArrayLike<TResult>;
 	static cast<T, TResult>(it: Loopable<T>): Loopable<TResult> {
 		return it as any;
-	}
-
-	/**
-	 * Return a concatination of this sequence and the provided sequences.
-	 *
-	 * @static
-	 * @template T - Itrable's elements' type
-	 * @param {...Loopable<T>[]} iterables - Iterable to concat to this sequence.
-	 * @returns {Iterable<T>} A concatination of this sequence and the provided sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	static concat<T>(first: Loopable<T>, ...iterables: Loopable<T>[]): Iterable<T> {
-		iterables.unshift(first);
-		return new ConcatIterable(Ninq.map(iterables, ArrayLikeIterable.toIterable));
-	}
-
-	/**
-	 * Return a concatination of this sequence and the provided sequences.
-	 *
-	 * @param {...Iterable<T>[]} iterables - Iterable to concat to this sequence.
-	 * @returns {Ninq<T>} A concatination of this sequence and the provided sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	concat(other: Loopable<T>, ...rest: Loopable<T>[]): Ninq<T> {
-		rest.unshift(other);
-		return new Ninq(
-			Ninq.concat<T>(
-				this.iterable,
-				...Ninq.map(rest, ArrayLikeIterable.toIterable)
-			)
-		);
-	}
-
-	/**
-	 * Return a concatination of this sequence and the provided sequences.
-	 *
-	 * @param {...Iterable<T>[]} iterables - Iterable to concat to this sequence.
-	 * @returns {Ninq<T>} A concatination of this sequence and the provided sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	concatTo(iterable: Loopable<T>): Ninq<T> {
-		return new Ninq<T>(
-			Ninq.concat(
-				iterable,
-				ArrayLikeIterable.toIterable(this.iterable),
-			)
-		);
 	}
 
 	/**
@@ -2747,7 +2708,12 @@ export namespace Ninq {
 		fromCallback,
 	} = funcs;
 }
-export default Ninq;
+
+export function isNinq<T>(obj: any): obj is Ninq<T> {
+	return !!obj && !!obj[iterable] &&
+		typeof obj[iterable][Symbol.iterator] === 'function';
+}
+
 export {
 	isIterable,
 	isArrayLike,

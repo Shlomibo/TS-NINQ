@@ -1,4 +1,4 @@
-import { Loopable } from '../types';
+import { Loopable } from './declarations';
 export default class ArrayLikeIterable<T> implements Iterable<T> {
 	constructor(
 		protected readonly arrayLike: ArrayLike<T>,
@@ -62,4 +62,8 @@ export function isArrayLike<T>(obj: any): obj is ArrayLike<T> {
 		(obj.length >= 0) &&
 		(obj.length !== Infinity) &&
 		(Math.floor(obj.length) === obj.length);
+}
+
+export function isLoopable<T>(obj: any): obj is Loopable<T> {
+	return !!obj && (isIterable(obj) || isArrayLike(obj));
 }

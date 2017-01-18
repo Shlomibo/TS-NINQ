@@ -14,7 +14,7 @@
         ],
         "suppressImplicitAnyIndexErrors": true,
 
-        "noImplicitAny": true,
+        "noImplicitAny": false,
         "noFallthroughCasesInSwitch": true,
         "noImplicitReturns": true,
         "noImplicitThis": true,
