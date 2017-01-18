@@ -34,26 +34,32 @@ export class ComparerTracker<T> implements Tracker<T> {
 	}
 }
 
-export default class DistinctIterable<T> implements Iterable<T> {
-	private readonly tracker: () => Tracker<T>;
+class DistinctIterable<T> extends Ninq<T> {
+	private readonly _tracker: () => Tracker<T>;
+	private readonly _it: Iterable<T>;
 
 	constructor(
-		private readonly it: Iterable<T>,
+		it: Iterable<T>,
 		comparer?: EqualityComparer<T>
 	) {
-		this.tracker = typeof comparer !== 'function'
+		let that: this;
+		super({
+			*[Symbol.iterator]() {
+				const tracker = that._tracker();
+				for (let item of that._it) {
+					if (!tracker.wasReturned(item)) {
+						yield item;
+					}
+				}
+			},
+		});
+		that = this;
+		this._it = it;
+		this._tracker = typeof comparer !== 'function'
 			? () => new DefaultTracker<T>()
 			: () => new ComparerTracker(comparer);
 	}
 
-	*[Symbol.iterator]() {
-		const tracker = this.tracker();
-		for (let item of this.it) {
-			if (!tracker.wasReturned(item)) {
-				yield item;
-			}
-		}
-	}
 }
 
 declare module './core/ninq' {
@@ -108,7 +114,7 @@ Object.assign(Ninq, {
 	distinct<T>(it: Loopable<T>, comparer?: EqualityComparer<T>) {
 		it = ArrayLikeIterable.toIterable(it);
 		return typeof comparer === 'function'
-			? new Ninq(new DistinctIterable(it, comparer))
+			? new DistinctIterable(it, comparer)
 			: extendToNinq<T, Set<T>>(new Set(it));
 	},
 });

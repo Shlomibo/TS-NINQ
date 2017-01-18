@@ -371,38 +371,6 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Produces the set difference of two sequences by using the specified IEqualityComparer<T> to compare values
-	 *
-	 * @static
-	 * @template T - Itrable's elements' type
-	 * @param {Loopable<T>} left - An Iterable<T> whose elements that are not also in second will be returned
-	 * @param {Loopable<T>} right - An Iterable<T> whose elements that also occur in the first sequence
-	 * 	will cause those elements to be removed from the returned sequence
-	 * @param {EqualityComparer<T>} [comparer] - A comparer to compare values
-	 * @returns A sequence that contains the set difference of the elements of two sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	static except<T>(left: Loopable<T>, right: Loopable<T>, comparer?: EqualityComparer<T>)
-		: Iterable<T> {
-		[left, right] = [left, right].map(ArrayLikeIterable.toIterable);
-		return new ExceptIterable(left, right, comparer);
-	}
-	/**
-	 * Produces the set difference of two sequences by using the specified IEqualityComparer<T> to compare values
-	 *
-	 * @param {Loopable<T>} other - An Iterable<T> whose elements that also occur in the first sequence
-	 * 	will cause those elements to be removed from the returned sequence
-	 * @param {EqualityComparer<T>} [comparer] - A comparer to compare values
-	 * @returns A sequence that contains the set difference of the elements of two sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	except(other: Loopable<T>, comparer?: EqualityComparer<T>) {
-		return new Ninq(Ninq.except(this.iterable, other, comparer));
-	}
-
-	/**
 	 * Returns the first element of a sequence, or undefined if the sequence contains no elements.
 	 *
 	 *

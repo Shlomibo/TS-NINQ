@@ -7,21 +7,27 @@ import sym from './core/symbols';
 
 const iterable = sym.iterable;
 
-class ConcatIterable<T> implements Iterable<T> {
+class ConcatIterable<T> extends Ninq<T> {
+	private readonly _iterables: Iterable<Iterable<T>>;
 
 	constructor(
-		private readonly iterables: Iterable<Iterable<T>>
+		iterables: Iterable<Iterable<T>>
 	) {
+		let that: this;
+		super({
+			*[Symbol.iterator]() {
+				for (let iterable of that._iterables) {
+					yield* iterable;
+				}
+			},
+		});
+		that = this;
 		for (let iterable of iterables) {
 			if (!iterable || (typeof iterable[Symbol.iterator] !== 'function')) {
 				throw new Error("Iterable is't iterable");
 			}
 		}
-	}
-	*[Symbol.iterator]() {
-		for (let iterable of this.iterables) {
-			yield* iterable;
-		}
+		this._iterables = iterables;
 	}
 }
 
@@ -67,7 +73,7 @@ Object.assign(Ninq, {
 		if (iterables.some(it => !isLoopable(it))) {
 			throw new TypeError('Not an iterable');
 		}
-		return new Ninq(new ConcatIterable(iterables.map(ArrayLikeIterable.toIterable)));
+		return new ConcatIterable(iterables.map(ArrayLikeIterable.toIterable));
 	},
 });
 
