@@ -258,50 +258,6 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Returns distinct elements from a sequence by using the default equality comparer to compare values
-	 *
-	 * @static
-	 * @template T - Itrable's elements' type
-	 * @param {Loopable<T>} it - Iterable to calculate avg for
-	 * @returns {Set<T>} A Set<T> that contains distinct elements from the source sequence
-	 *
-	 * @memberOf Ninq
-	 */
-	static distinct<T>(it: Loopable<T>): Set<T>;
-	/**
-	 * Returns distinct elements from a sequence by using a specified IEqualityComparer<T> to compare values
-	 *
-	 * @static
-	 * @template T - Itrable's elements' type
-	 * @param {Iterable<T>} it - Iterable to calculate avg for
-	 * @param {EqualityComparer<T>} comparer - A comparer to compare values
-	 * @returns {Iterable<T>} A sequence that contains distinct elements from the source sequence
-	 *
-	 * @memberOf Ninq
-	 */
-	static distinct<T>(it: Loopable<T>, comparer: EqualityComparer<T>): Iterable<T>;
-	static distinct<T>(it: Loopable<T>, comparer?: EqualityComparer<T>) {
-		it = ArrayLikeIterable.toIterable(it);
-		return typeof comparer === 'function'
-			? new DistinctIterable(it, comparer)
-			: new Set(it);
-	}
-	/**
-	 * Returns distinct elements from a sequence by using a specified IEqualityComparer<T> to compare values
-	 *
-	 * @param {EqualityComparer<T>} [comparer] - A comparer to compare values
-	 * @returns A Ninq<T> that contains distinct elements from the source sequence
-	 *
-	 * @memberOf Ninq
-	 */
-	distinct(comparer?: EqualityComparer<T>) {
-		const iterable = typeof comparer === 'function'
-			? Ninq.distinct(this.iterable, comparer)
-			: Ninq.distinct(this.iterable);
-		return new Ninq(iterable);
-	}
-
-	/**
 	 * Returns the element at a specified index in a sequence or undefined
 	 *
 	 * @static
@@ -2726,3 +2682,18 @@ export {
 	Hash,
 	IndexedHash,
 };
+
+export type Ninqed<T, U> = Ninq<T> & U;
+
+export function extendToNinq<T, U>(obj: U): Ninqed<T, U> {
+	obj = Object(obj);
+	Object.getOwnPropertyNames(Ninq.prototype)
+		.map(key => [key, Object.getOwnPropertyDescriptor(Ninq.prototype, key)])
+		.forEach(([key, prop]: [string, PropertyDescriptor]) =>
+			void Object.defineProperty(obj, key, prop)
+		);
+
+	obj[iterable] = obj;
+
+	return obj as any;
+}

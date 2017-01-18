@@ -1,7 +1,6 @@
 import { Ninq } from './core/ninq';
 import { Loopable } from './core/declarations';
 
-import './map';
 import { isLoopable } from './core/array-like-iterable';
 import ArrayLikeIterable from './core/array-like-iterable';
 import sym from './core/symbols';
