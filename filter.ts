@@ -43,7 +43,7 @@ declare module './core/ninq' {
 		 *
 		 * @memberOf Ninq
 		 */
-		function filter<T>(it: Loopable<T>, predicate: Predicate<T>): Ninq<T>;
+		export function filter<T>(it: Loopable<T>, predicate: Predicate<T>): Ninq<T>;
 	}
 	interface Ninq<T> {
 		/**
