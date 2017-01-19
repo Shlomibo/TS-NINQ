@@ -137,7 +137,7 @@ declare module './core/ninq' {
 	}
 }
 
-Object.defineProperties(Ninq, {
+Object.assign(Ninq, {
 	groupBy<T, TKey, TResult>(
 		it: Loopable<T>,
 		keySelector: KeySelector<T, TKey>,
@@ -161,7 +161,7 @@ Object.defineProperties(Ninq, {
 		);
 	}
 });
-Object.defineProperties(Ninq.prototype, {
+Object.assign(Ninq.prototype, {
 	groupBy<T, TKey, TResult>(
 		this: Ninq<T>,
 		keySelector: KeySelector<T, TKey>,

@@ -72,7 +72,7 @@ declare module './core/ninq' {
 	}
 }
 
-Object.defineProperties(Ninq, {
+Object.assign(Ninq, {
 	intersect<T>(left: Loopable<T>, right: Loopable<T>, comparer?: EqualityComparer<T>) {
 		[left, right] = [left, right].map(ArrayLikeIterable.toIterable);
 		if (comparer) {
@@ -90,7 +90,7 @@ Object.defineProperties(Ninq, {
 		return extendToNinq(result);
 	}
 });
-Object.defineProperties(Ninq.prototype, {
+Object.assign(Ninq.prototype, {
 	intersect<T>(this: Ninq<T>, other: Loopable<T>, comparer?: EqualityComparer<T>) {
 		return Ninq.intersect(this[iterable], other, comparer as any);
 	}

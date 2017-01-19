@@ -181,7 +181,7 @@ declare module './core/ninq' {
 	}
 }
 
-Object.defineProperties(Ninq, {
+Object.assign(Ninq, {
 	groupJoin<TOuner, TInner, TKey, TResult>(
 		outer: Loopable<TOuner>,
 		inner: Loopable<TInner>,
@@ -214,7 +214,7 @@ Object.defineProperties(Ninq, {
 	}
 });
 
-Object.defineProperties(Ninq.prototype, {
+Object.assign(Ninq.prototype, {
 	groupJoin<T, TInner, TKey, TResult>(
 		this: Ninq<T>,
 		inner: Loopable<TInner>,

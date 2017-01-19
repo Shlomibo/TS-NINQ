@@ -120,7 +120,7 @@ declare module './core/ninq' {
 	}
 }
 
-Object.defineProperties(Ninq, {
+Object.assign(Ninq, {
 	join<TOuter, TInner, TKey>(
 		outer: Loopable<TOuter>,
 		inner: Loopable<TInner>,
@@ -138,7 +138,7 @@ Object.defineProperties(Ninq, {
 		);
 	}
 });
-Object.defineProperties(Ninq.prototype, {
+Object.assign(Ninq.prototype, {
 	join<T, TOther, TKey>(
 		this: Ninq<T>,
 		other: Loopable<TOther>,
@@ -146,12 +146,12 @@ Object.defineProperties(Ninq.prototype, {
 		otherKeySelector: KeySelector<TOther, TKey>,
 		comparer?: EqualityComparer<TKey>
 	) {
-		return new Ninq(Ninq.join(
+		return Ninq.join(
 			this[iterable],
 			other,
 			keySelector,
 			otherKeySelector,
 			comparer
-		));
+		);
 	}
 });
