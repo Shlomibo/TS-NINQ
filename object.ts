@@ -1,3 +1,4 @@
+import { Ninq } from './core/ninq';
 
 export enum ObjectIterationOptions {
 	default = 0x0,
@@ -30,161 +31,226 @@ export enum EntryType {
 	symbol
 }
 
+export interface ObjectIterableExtension extends Ninq<Entry> {
+	keys(): Iterable<string | symbol>;
+	values(): Iterable<any>;
+}
 export interface EntryBase {
 	source: {};
 	type: EntryType;
 }
-export interface PropertyEntry {
+export interface PropertyEntry extends EntryBase {
 	name: string;
 	descriptor: PropertyDescriptor;
 	type: EntryType.property;
 }
-export interface SymbolEntry {
+export interface SymbolEntry extends EntryBase {
 	symbol: symbol;
 	value: any;
 	type: EntryType.symbol;
 }
 export type Entry = PropertyEntry | SymbolEntry;
 
-const DEFAULT_OPTIONS = ObjectIterationOptions.ownProperties |
-	ObjectIterationOptions.enumerableProperties |
-	ObjectIterationOptions.readableProperties |
-	ObjectIterationOptions.writableProperties;
+const DEFAULT_OPTIONS = ObjectIterationOptions.ownEnumerable;
 
-export class ObjectIterable implements Iterable<Entry> {
+class ObjectIterable extends Ninq<Entry> implements ObjectIterableExtension {
+	private _keys: Ninq<string | symbol> | undefined;
+	private _values: Ninq<any> | undefined;
+
 	constructor(
-		private readonly obj: {},
-		private readonly options = ObjectIterationOptions.default,
+		obj: {},
+		options = [ObjectIterationOptions.default],
 	) {
-		if (!this.obj || -1 === ['object', 'function'].indexOf(typeof this.obj)) {
+		if (!obj || -1 === ['object', 'function'].indexOf(typeof obj)) {
 			throw new TypeError('Invalid object');
 		}
-		this.options = this.options || DEFAULT_OPTIONS;
-	}
+		options = options.map(op => op || DEFAULT_OPTIONS);
 
-	*values(): IterableIterator<any> {
-		for (let entry of this) {
-			switch (entry.type) {
-				case EntryType.property: {
-					if (entry.descriptor.get) {
-						yield entry.descriptor.get.call(this.obj);
+		super({
+			[Symbol.iterator](): IterableIterator<Entry> {
+				let currentObj = obj;
+				return generator();
+
+				function* generator() {
+					for (const op of options) {
+						if (hasFlag(op, ObjectIterationOptions.ownProperties)) {
+							yield* objGenerator(op);
+						}
+						if (hasFlag(op, ObjectIterationOptions.inheritedProperties)) {
+							for (currentObj = Object.getPrototypeOf(currentObj);
+								!!currentObj;
+								currentObj = Object.getPrototypeOf(currentObj)) {
+
+								yield* objGenerator(op);
+							}
+						}
 					}
-					else if (!entry.descriptor.set) {
-						yield entry.descriptor.value;
+				}
+
+				function* objGenerator(options: ObjectIterationOptions) {
+					const names = Object.getOwnPropertyNames(currentObj),
+						enumerables = new Set(Object.keys(currentObj));
+
+					for (let name of names) {
+						if (shouldNameReturned(name)) {
+							const descriptor = Object.getOwnPropertyDescriptor(currentObj, name);
+
+							if (shouldReturned(descriptor)) {
+								yield {
+									source: currentObj,
+									type: EntryType.property,
+									name,
+									descriptor,
+								} as PropertyEntry;
+							}
+						}
 					}
-					break;
+					if (hasFlag(options, ObjectIterationOptions.symbols)) {
+						for (let sym of Object.getOwnPropertySymbols(currentObj)) {
+							yield {
+								source: currentObj,
+								type: EntryType.symbol,
+								symbol: sym,
+								value: currentObj[sym],
+							} as SymbolEntry;
+						}
+					}
+
+					function shouldNameReturned(name: string) {
+						if (hasFlag(options, ObjectIterationOptions.enumerableProperties)) {
+							return hasFlag(options, ObjectIterationOptions.nonEnumerableProperties) ||
+								enumerables.has(name);
+						}
+						else if (hasFlag(options, ObjectIterationOptions.nonEnumerableProperties)) {
+							return !enumerables.has(name);
+						}
+						else {
+							return false;
+						}
+					}
+					function shouldReturned(desc: PropertyDescriptor) {
+						return checkReadWrite() && checkDataOrAccessor();
+
+						function checkReadWrite() {
+							if (hasFlag(options, ObjectIterationOptions.readableProperties)) {
+								return hasFlag(options, ObjectIterationOptions.writableProperties) ||
+									// It has an accessor prop with a getter
+									typeof desc.get === 'function' ||
+									// or it is a data prop.
+									typeof desc.set !== 'function';
+							}
+							else if (hasFlag(options, ObjectIterationOptions.writableProperties)) {
+								return typeof desc.set === 'function' ||
+									(typeof desc.get !== 'function' && desc.writable);
+							}
+							else {
+								return false;
+							}
+						}
+						function checkDataOrAccessor() {
+							if (hasFlag(options, ObjectIterationOptions.dataProperties)) {
+								return hasFlag(options, ObjectIterationOptions.accessorProperties) ||
+									!isAccessor();
+							}
+							else if (hasFlag(options, ObjectIterationOptions.accessorProperties)) {
+								return isAccessor();
+							}
+							else {
+								return false;
+							}
+
+							function isAccessor() {
+								return typeof desc.get === 'function' ||
+									typeof desc.set === 'function';
+							}
+						}
+					}
 				}
-				case EntryType.symbol: {
-					yield entry.value;
-					break;
-				}
-				default: break;
 			}
+		});
+
+		function hasFlag(options: ObjectIterationOptions, flag: ObjectIterationOptions) {
+			return (options & flag) === flag;
 		}
 	}
 
-	[Symbol.iterator](): Iterator<Entry> {
-		const that = this;
-		let currentObj = this.obj;
-		return generator();
-
-		function* generator() {
-			if (that.hasFlag(ObjectIterationOptions.ownProperties)) {
-				yield* objGenerator();
-			}
-			if (that.hasFlag(ObjectIterationOptions.inheritedProperties)) {
-				for (currentObj = Object.getPrototypeOf(currentObj);
-					!!currentObj;
-					currentObj = Object.getPrototypeOf(currentObj)) {
-
-					yield* objGenerator();
+	keys(): Ninq<string | symbol> {
+		const that = this as Iterable<Entry>;
+		if (!this._keys) {
+			this._keys = new Ninq({
+				*[Symbol.iterator]() {
+					for (let entry of that) {
+						yield entry.type === EntryType.property
+							? entry.name
+							: entry.symbol;
+					}
 				}
-			}
+			});
 		}
-		function* objGenerator() {
-			const names = Object.getOwnPropertyNames(currentObj),
-				enumerables = new Set(Object.keys(currentObj));
 
-			for (let name of names) {
-				if (shouldNameReturned(name)) {
-					const descriptor = Object.getOwnPropertyDescriptor(currentObj, name);
-
-					if (shouldReturned(descriptor)) {
-						yield {
-							source: currentObj,
-							type: EntryType.property,
-							name,
-							descriptor,
-						} as PropertyEntry;
-					}
-				}
-			}
-			if (that.hasFlag(ObjectIterationOptions.symbols)) {
-				for (let sym of Object.getOwnPropertySymbols(currentObj)) {
-					yield {
-						source: currentObj,
-						type: EntryType.symbol,
-						symbol: sym,
-						value: currentObj[sym],
-					} as SymbolEntry;
-				}
-			}
-
-			function shouldNameReturned(name: string) {
-				if (that.hasFlag(ObjectIterationOptions.enumerableProperties)) {
-					return that.hasFlag(ObjectIterationOptions.nonEnumerableProperties) ||
-						enumerables.has(name);
-				}
-				else if (that.hasFlag(ObjectIterationOptions.nonEnumerableProperties)) {
-					return !enumerables.has(name);
-				}
-				else {
-					return false;
-				}
-			}
-			function shouldReturned(desc: PropertyDescriptor) {
-				return checkReadWrite() && checkDataOrAccessor();
-
-				function checkReadWrite() {
-					if (that.hasFlag(ObjectIterationOptions.readableProperties)) {
-						return that.hasFlag(ObjectIterationOptions.writableProperties) ||
-							// It has an accessor prop with a getter
-							typeof desc.get === 'function' ||
-							// or it is a data prop.
-							typeof desc.set !== 'function';
-					}
-					else if (that.hasFlag(ObjectIterationOptions.writableProperties)) {
-						return typeof desc.set === 'function' ||
-							(typeof desc.get !== 'function' && desc.writable);
-					}
-					else {
-						return false;
-					}
-				}
-				function checkDataOrAccessor() {
-					if (that.hasFlag(ObjectIterationOptions.dataProperties)) {
-						return that.hasFlag(ObjectIterationOptions.accessorProperties) ||
-							!isAccessor();
-					}
-					else if (that.hasFlag(ObjectIterationOptions.accessorProperties)) {
-						return isAccessor();
-					}
-					else {
-						return false;
-					}
-
-					function isAccessor() {
-						return typeof desc.get === 'function' ||
-							typeof desc.set === 'function';
-					}
-				}
-			}
-		}
+		return this._keys;
 	}
 
-	private hasFlag(flag: ObjectIterationOptions) {
-		return (this.options & flag) === flag;
+	values(): Ninq<any> {
+		let that = this;
+		if (!this._values) {
+			this._values = new Ninq({
+				*[Symbol.iterator]() {
+					for (let entry of <Iterable<Entry>>that) {
+						switch (entry.type) {
+							case EntryType.property: {
+								if (entry.descriptor.get) {
+									yield entry.descriptor.get.call(entry.source);
+								}
+								else if (!entry.descriptor.set) {
+									yield entry.descriptor.value;
+								}
+								break;
+							}
+							case EntryType.symbol: {
+								yield entry.value;
+								break;
+							}
+							default: break;
+						}
+					}
+
+				}
+			});
+		}
+
+		return this._values;
 	}
 }
 
-export default ObjectIterable;
+declare module './core/ninq' {
+	namespace Ninq {
+		/**
+		 * Convert loopable object to Ninq
+		 *
+		 * @static
+		 * @template T - The type of the elements of it
+		 * @param {Loopable<T>} - Loopable to convert
+		 * @returns {Ninq<T>} - Ninq wrapper for it.
+		 */
+		export function of(obj: {}, options?: ObjectIterationOptions[]): ObjectIterableExtension;
+		export function keys(obj: {}, options?: ObjectIterationOptions[]): Ninq<string | symbol>;
+		export function values(obj: {}, options?: ObjectIterationOptions[]): Ninq<any>;
+	}
+}
+
+Object.assign(Ninq, {
+	of(obj: {}, options?: ObjectIterationOptions[]): ObjectIterableExtension {
+		return new ObjectIterable(obj, options);
+	},
+
+	keys(obj: {}, options?: ObjectIterationOptions[]): Ninq<string | symbol> {
+		return new ObjectIterable(obj, options)
+			.keys();
+	},
+
+	values(obj: {}, options?: ObjectIterationOptions[]): Ninq<any> {
+		return new ObjectIterable(obj, options)
+			.values();
+	}
+});

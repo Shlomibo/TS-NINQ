@@ -805,43 +805,6 @@ export class Ninq<T> implements Iterable<T> {
 			: Ninq.min(this.iterable as any);
 	}
 
-	static of<T>(it: Loopable<T>): Ninq<T>;
-	static of(obj: {}, options?: ObjectIterationOptions)
-		: Ninq<Entry> & {
-			values(this: Ninq<Entry>): Ninq<any>,
-		};
-	/**
-	 * Convert loopable object to Ninq
-	 *
-	 * @static
-	 * @template T - The type of the elements of it
-	 * @param {Loopable<T>} - Loopable to convert
-	 * @returns {Ninq<T>} - Ninq wrapper for it.
-	 */
-	static of(obj: {}, options?: ObjectIterationOptions): Ninq<any> {
-		return obj instanceof Ninq
-			? obj
-			: isIterable(obj) || isArrayLike(obj)
-				? new Ninq(obj)
-				: new Ninq(new ObjectIterable(obj, options));
-	}
-
-	static entriesOf(obj: {}, options?: ObjectIterationOptions): Iterable<Entry> {
-		return new ObjectIterable(obj, options);
-	}
-
-	static valuesOf(obj: {}, options?: ObjectIterationOptions): Iterable<any> {
-		return new ObjectIterable(obj, options)
-			.values();
-	}
-
-	protected values(): Ninq<any> {
-		if (!(this.iterable instanceof ObjectIterable)) {
-			throw new Error('Not implemented');
-		}
-		return new Ninq(this.iterable.values());
-	}
-
 	/**
 	 * Generates a sequence of integral numbers within a specified range
 	 *
