@@ -5,28 +5,20 @@ import ArrayLikeIterable from './core/array-like-iterable';
 const iterable = symbols.iterable;
 
 class FilterIterable<T> extends Ninq<T> {
-	private readonly it: Iterable<T>;
-	private readonly predicate: Predicate<T>;
-
 	constructor(
 		it: Iterable<T>,
 		predicate: Predicate<T>,
 	) {
-		let that: this;
 		super({
 			*[Symbol.iterator]() {
 				let i = 0;
-				for (let item of that.it) {
-					if (that.predicate(item, i++)) {
+				for (let item of it) {
+					if (predicate(item, i++)) {
 						yield item;
 					}
 				}
 			}
 		});
-
-		that = this;
-		this.it = it;
-		this.predicate = predicate;
 	}
 }
 

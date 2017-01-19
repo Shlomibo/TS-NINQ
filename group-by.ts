@@ -10,44 +10,38 @@ export interface Grouping<TKey, TElement> extends Iterable<TElement> {
 }
 
 class GroupingIterable<TSource, TKey, TElement> extends Ninq<Grouping<TKey, TElement>> {
-	private readonly iterable: Iterable<TSource>;
-	private readonly keySelector: KeySelector<TSource, TKey>;
-	private readonly elementSelector: KeySelector<TSource, TElement>;
-	private readonly comparer?: EqualityComparer<TKey>;
-
 	constructor(
 		iterable: Iterable<TSource>,
 		keySelector: KeySelector<TSource, TKey>,
 		elementSelector: KeySelector<TSource, TElement>,
 		comparer?: EqualityComparer<TKey>
 	) {
-		let that: this;
 		super({
 			*[Symbol.iterator]() {
 				let result: Map<TKey, TElement[]> | ([TKey, TElement[]])[];
-				if (!that.comparer) {
+				if (!comparer) {
 					result = new Map();
-					for (let item of that.iterable) {
-						const key = that.keySelector(item);
+					for (let item of iterable) {
+						const key = keySelector(item);
 						if (!result.has(key)) {
-							result.set(key, [that.elementSelector(item)]);
+							result.set(key, [elementSelector(item)]);
 						}
 						else {
 							const entry = result.get(key) as TElement[];
-							entry.push(that.elementSelector(item));
+							entry.push(elementSelector(item));
 						}
 					}
 				}
 				else {
 					result = [];
-					for (let item of that.iterable) {
-						const key = that.keySelector(item),
-							entry = result.find(entry => that.comparer!(key, entry[0]));
+					for (let item of iterable) {
+						const key = keySelector(item),
+							entry = result.find(entry => comparer!(key, entry[0]));
 						if (entry) {
-							entry[1].push(that.elementSelector(item));
+							entry[1].push(elementSelector(item));
 						}
 						else {
-							result.push([key, [that.elementSelector(item)]]);
+							result.push([key, [elementSelector(item)]]);
 						}
 					}
 				}
@@ -58,12 +52,6 @@ class GroupingIterable<TSource, TKey, TElement> extends Ninq<Grouping<TKey, TEle
 				}
 			},
 		});
-
-		that = this;
-		this.iterable = iterable;
-		this.keySelector = keySelector;
-		this.elementSelector = elementSelector;
-		this.comparer = comparer;
 	}
 }
 

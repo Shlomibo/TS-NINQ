@@ -5,30 +5,25 @@ import { symbols } from './core/symbols';
 const iterable = symbols.iterable;
 
 class ExceptIterable<T> extends Ninq<T> {
-		private readonly _left: Iterable<T>;
-		private readonly _right: Iterable<T>;
-		private readonly _comparer?: EqualityComparer<T>;
-
 	constructor(
 		left: Iterable<T>,
 		right: Iterable<T>,
 		comparer?: EqualityComparer<T>
 	) {
-		let that: this;
 		super({
 			*[Symbol.iterator]() {
-				if (that._comparer) {
-					let [...result] = new Set(that._left);
-					for (let rightItem of that._right) {
+				if (comparer) {
+					let [...result] = new Set(left);
+					for (let rightItem of right) {
 						result = result.filter(leftItem =>
-							that._comparer && !that._comparer(leftItem, rightItem)
+							comparer && !comparer(leftItem, rightItem)
 						);
 					}
 					yield* result;
 				}
 				else {
-					let lSet = new Set(that._left),
-						rSet = new Set(that._right);
+					let lSet = new Set(left),
+						rSet = new Set(right);
 					for (let item of lSet) {
 						if (!rSet.has(item)) {
 							yield item;
@@ -37,10 +32,6 @@ class ExceptIterable<T> extends Ninq<T> {
 				}
 			},
 		});
-		that = this;
-		this._left = left;
-		this._right = right;
-		this._comparer = comparer;
 	}
 }
 

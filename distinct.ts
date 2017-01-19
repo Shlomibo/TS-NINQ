@@ -35,27 +35,23 @@ export class ComparerTracker<T> implements Tracker<T> {
 }
 
 class DistinctIterable<T> extends Ninq<T> {
-	private readonly _tracker: () => Tracker<T>;
-	private readonly _it: Iterable<T>;
-
 	constructor(
 		it: Iterable<T>,
 		comparer?: EqualityComparer<T>
 	) {
-		let that: this;
+		let getTracker: () => Tracker<T>;
+
 		super({
 			*[Symbol.iterator]() {
-				const tracker = that._tracker();
-				for (let item of that._it) {
+				const tracker = getTracker();
+				for (let item of it) {
 					if (!tracker.wasReturned(item)) {
 						yield item;
 					}
 				}
 			},
 		});
-		that = this;
-		this._it = it;
-		this._tracker = typeof comparer !== 'function'
+		getTracker = typeof comparer !== 'function'
 			? () => new DefaultTracker<T>()
 			: () => new ComparerTracker(comparer);
 	}

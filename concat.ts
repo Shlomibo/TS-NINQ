@@ -8,26 +8,22 @@ import sym from './core/symbols';
 const iterable = sym.iterable;
 
 class ConcatIterable<T> extends Ninq<T> {
-	private readonly _iterables: Iterable<Iterable<T>>;
 
 	constructor(
 		iterables: Iterable<Iterable<T>>
 	) {
-		let that: this;
 		super({
 			*[Symbol.iterator]() {
-				for (let iterable of that._iterables) {
+				for (let iterable of iterables) {
 					yield* iterable;
 				}
 			},
 		});
-		that = this;
 		for (let iterable of iterables) {
 			if (!iterable || (typeof iterable[Symbol.iterator] !== 'function')) {
 				throw new Error("Iterable is't iterable");
 			}
 		}
-		this._iterables = iterables;
 	}
 }
 
