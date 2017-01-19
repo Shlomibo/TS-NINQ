@@ -565,63 +565,6 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Produces the set intersection of two sequences.
-	 *
-	 * @static
-	 * @template T - The type of the elements of the input sequences
-	 * @param {Loopable<T>} left - An Iterable<T> whose distinct elements that also appear in right will be returned
-	 * @param {Loopable<T>} right - An Iterable<T> whose distinct elements that also appear in the left sequence will be returned
-	 * @returns - A sequence that contains the elements that form the set intersection of two sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	static intersect<T>(left: Loopable<T>, right: Loopable<T>): Set<T>;
-	/**
-	 * Produces the set intersection of two sequences.
-	 *
-	 * @static
-	 * @template T - The type of the elements of the input sequences
-	 * @param {Loopable<T>} left - An Iterable<T> whose distinct elements that also appear in right will be returned
-	 * @param {Loopable<T>} right - An Iterable<T> whose distinct elements that also appear in the left sequence will be returned
-	 * @param {EqualityComparer<T>} comparer - A comparer to compare values
-	 * @returns - A sequence that contains the elements that form the set intersection of two sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	static intersect<T>(left: Loopable<T>, right: Loopable<T>, comparer: EqualityComparer<T>): Iterable<T>;
-	static intersect<T>(left: Loopable<T>, right: Loopable<T>, comparer?: EqualityComparer<T>): Iterable<T> {
-		[left, right] = [left, right].map(ArrayLikeIterable.toIterable);
-		if (comparer) {
-			return new IntersectionIterator(left, right, comparer);
-		}
-		const leftSet = left instanceof Set
-			? left as Set<T>
-			: new Set(left);
-		const result = new Set<T>();
-		for (let item of right) {
-			if (leftSet.has(item)) {
-				result.add(item);
-			}
-		}
-		return result;
-	}
-	/**
-	 * Produces the set intersection of two sequences.
-	 *
-	 * @param {Loopable<T>} other - An Iterable<T> whose distinct elements that also appear in the left sequence will be returned
-	 * @param {EqualityComparer<T>} [comparer] - An optional comparer to compare values
-	 * @returns - A sequence that contains the elements that form the set intersection of two sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	intersect(other: Loopable<T>, comparer?: EqualityComparer<T>) {
-		const resultIterable = comparer
-			? Ninq.intersect(this.iterable, other, comparer)
-			: Ninq.intersect(this.iterable, other);
-		return new Ninq(resultIterable);
-	}
-
-	/**
 	 * Correlates the elements of two sequences based on matching keys
 	 *
 	 *
