@@ -946,34 +946,6 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Inverts the order of the elements in a sequence
-	 *
-	 * @static
-	 * @template T - The type of the elements of it
-	 * @param {Loopable<T>} iterable - A sequence of values to reverse
-	 * @returns {Iterable<T>} - A sequence whose elements correspond to those of the input sequence in reverse order
-	 *
-	 * @memberOf Ninq
-	 */
-	static reverse<T>(iterable: Loopable<T>): Iterable<T> {
-		return isArrayLike(iterable)
-			? new ReverseArrayLikeIterable(iterable)
-			: new ReverseIterable<T>(ArrayLikeIterable.toIterable(iterable));
-	}
-
-	/**
-	 * Inverts the order of the elements in the sequence
-	 *
-	 * @returns - A sequence whose elements correspond to those of the input sequence in reverse order
-	 *
-	 * @memberOf Ninq
-	 */
-	reverse() {
-		const iterable = Ninq.reverse(this.iterable);
-		return new Ninq<T>(iterable);
-	}
-
-	/**
 	 * Determines whether two sequences are equal by comparing the elements
 	 *
 	 * @template T - The type of the elements of the input sequences
