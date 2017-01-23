@@ -1605,34 +1605,6 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Traverses consequencing element of an iterable
-	 *
-	 * @static
-	 * @template T - The type of the elements of the input sequences
-	 * @param {Loopable<T>} it - The iterable to traverse on
-	 * @returns {Iterable<TraverseMapping<T>>} - An iterable that provides each two consequencing elements
-	 *
-	 * @memberOf Ninq
-	 */
-	static traverse<T>(it: Loopable<T>): Iterable<TraverseMapping<T>> {
-		it = ArrayLikeIterable.toIterable(it);
-		return new TraversingIterable(it);
-	}
-
-	/**
-	 * Traverses consequencing element of the iterable
-	 *
-	 * @returns {Ninq<TraverseMapping<T>>} - A Ninq iterable that provides each two consequencing elements
-	 *
-	 * @memberOf Ninq
-	 */
-	traverse(): Ninq<TraverseMapping<T>> {
-		return new Ninq(
-			Ninq.traverse(this.iterable)
-		);
-	}
-
-	/**
 	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
 	 *
 	 * @static
