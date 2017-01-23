@@ -1604,63 +1604,6 @@ export class Ninq<T> implements Iterable<T> {
 		return Ninq.toArray(this.iterable);
 	}
 
-	/**
-	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
-	 *
-	 * @static
-	 * @template L - The type of the elements of the input sequences
-	 * @template R - The type of the elements of the input sequences
-	 * @param {Loopable<L>} left - The first sequence to merge
-	 * @param {Loopable<R>} right - The second sequence to merge
-	 * @returns {Iterable<[T, T]>} - An Iterable<T> that contains merged elements of two input sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	static zip<L, R>(left: Loopable<L>, right: Loopable<R>): Iterable<[L, R]>;
-	/**
-	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
-	 *
-	 * @static
-	 * @template T - The type of the elements of the input sequences
-	 * @param {Loopable<T>} left - The first sequence to merge
-	 * @param {Loopable<T>} right - The second sequence to merge
-	 * @param {boolean} [throughAll] - true to return all elements from both sequences; otherwise, iteration stops with
-	 *	the first exhausted sequence
-	 * @returns {(Iterable<[T | undefined, T | undefined]>)} - An Iterable<T> that contains merged elements of two input sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	static zip<L, R>(left: Loopable<L>, right: Loopable<R>, throughAll?: boolean): Iterable<[L | undefined, R | undefined]>;
-	static zip<L, R>(left: Loopable<L>, right: Loopable<R>, throughAll?: boolean) {
-		[left, right] = [left, right].map(ArrayLikeIterable.toIterable) as [Iterable<L>, Iterable<R>];
-		return new ZipIterable(left, right, throughAll);
-	}
-
-	/**
-	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
-	 *
-	 * @param {Loopable<T>} other - The other sequence to merge
-	 * @returns {(Ninq<[T, T]>)} - An Iterable<T> that contains merged elements of two input sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	zip<U>(other: Loopable<U>): Ninq<[T, U]>;
-	/**
-	 * Return an array with the corresponding elements of two sequences, producing a sequence of the results
-	 *
-	 * @param {Loopable<T>} other - The other sequence to merge
-	 * @param {boolean} [throughAll] - true to return all elements from both sequences; otherwise, iteration stops with
-	 *	the first exhausted sequence
-	 * @returns {(Ninq<[T | undefined, T | undefined]>)} - An Iterable<T> that contains merged elements of two input sequences
-	 *
-	 * @memberOf Ninq
-	 */
-	zip<U>(other: Loopable<U>, throughAll?: boolean): Ninq<[T | undefined, U | undefined]>;
-	zip<U>(other: Loopable<U>, throughAll?: boolean) {
-		const it = Ninq.zip(this.iterable, other);
-		return new Ninq(it);
-	}
-
 	static stringify<T>(it: Loopable<T>, separator = ','): string {
 		const decomposed = it instanceof Array
 			? it

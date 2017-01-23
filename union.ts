@@ -98,6 +98,6 @@ Object.assign(Ninq.prototype, {
 		other: Loopable<T>,
 		comparer?: EqualityComparer<T>
 	): Ninq<T> {
-		return new Ninq(Ninq.union(this[iterable], other, comparer as any));
+		return Ninq.union(this[iterable], other, comparer as any);
 	}
 });

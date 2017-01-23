@@ -100,8 +100,6 @@ Object.assign(Ninq, {
 });
 Object.assign(Ninq.prototype, {
 	traverse<T>(this: Ninq<T>): Ninq<TraverseMapping<T>> {
-		return new Ninq(
-			Ninq.traverse(this[iterable])
-		);
+		return Ninq.traverse(<Iterable<T>>this[iterable]);
 	}
 });
