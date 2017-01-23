@@ -1603,18 +1603,6 @@ export class Ninq<T> implements Iterable<T> {
 	toArray(): T[] {
 		return Ninq.toArray(this.iterable);
 	}
-
-	static stringify<T>(it: Loopable<T>, separator = ','): string {
-		const decomposed = it instanceof Array
-			? it
-			: [...ArrayLikeIterable.toIterable(it)];
-
-		return decomposed.join(separator);
-	}
-
-	stringify(separator?: string): string {
-		return Ninq.stringify(this.iterable, separator);
-	}
 }
 export namespace Ninq {
 	export const {
