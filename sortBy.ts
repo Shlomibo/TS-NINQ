@@ -1,5 +1,12 @@
-import { Comparer, Loopable } from '../types';
-import { TwoThreeTree } from '../modules/2-3-tree';
+import { Comparer, Loopable, Comparable } from './core/declarations';
+import { TwoThreeTree } from './core/2-3-tree';
+import { Ninq } from './core/ninq';
+import ArrayLikeIterable from './core/array-like-iterable';
+import { symbols } from './core/symbols';
+const {
+	iterable,
+	comparer: compSym,
+} = symbols;
 
 /**
  * An iterable that is sorted
@@ -26,18 +33,23 @@ export interface SortedIterable<T> extends Iterable<T> {
 	): SortedIterable<T>;
 }
 
-export class SortingIterable<T> implements SortedIterable<T> {
-
-	private readonly _comparer: Comparer<T>;
+export class SortingIterable<T> extends Ninq<T> implements SortedIterable<T> {
 
 	constructor(
-		protected readonly iterable: Iterable<T>,
+		iterable: Iterable<T>,
 		comparer: Comparer<T>,
 		descending = false
 	) {
-		this._comparer = descending
+		const actualComparer = descending
 			? inverter
 			: comparer;
+
+		super({
+			[Symbol.iterator]() {
+				return SortingIterable._sort(iterable, actualComparer);
+			}
+		});
+		this[compSym] = actualComparer;
 
 		function inverter(x: T, y: T) {
 			const cmp = comparer(x, y);
@@ -52,9 +64,6 @@ export class SortingIterable<T> implements SortedIterable<T> {
 			}
 		}
 	}
-	[Symbol.iterator]() {
-		return this.sort(this.iterable);
-	}
 
 	thenBy(
 		comparer: Comparer<T>,
@@ -63,14 +72,14 @@ export class SortingIterable<T> implements SortedIterable<T> {
 
 		return new SubSort(
 			this,
-			this.iterable,
+			<Iterable<T>>this[iterable],
 			comparer,
 			descending
 		);
 	}
 
-	protected *sort(it: Iterable<T>) {
-		const sorted = new TwoThreeTree<T>(this._comparer);
+	protected static *_sort<T>(it: Iterable<T>, comparer: Comparer<T>) {
+		const sorted = new TwoThreeTree<T>(comparer);
 		sorted.addRange(it);
 
 		yield* sorted;
@@ -79,17 +88,19 @@ export class SortingIterable<T> implements SortedIterable<T> {
 export default SortingIterable;
 
 class SubSort<T> extends SortingIterable<T> {
+	private readonly _parent: SortingIterable<T>;
 	constructor(
-		private readonly parent: SortingIterable<T>,
+		parent: SortingIterable<T>,
 		iterable: Iterable<T>,
 		comparer: Comparer<T>,
 		descending = false
 	) {
 		super(iterable, comparer, descending);
+		this._parent = parent;
 	}
 	[Symbol.iterator]() {
-		const subSort = this.sort(this.iterable);
-		return this.sort.call(this.parent, subSort);
+		const subSort = SortingIterable._sort(<Iterable<T>>this[iterable], this[compSym]);
+		return SortingIterable._sort(subSort, this._parent[compSym]);
 	}
 }
 
@@ -98,3 +109,102 @@ export function isSortedIterable<T>(iterable: Loopable<T>)
 
 	return typeof (iterable as any).thenBy === 'function';
 }
+
+declare module './core/ninq' {
+	namespace Ninq {
+		/**
+		 * Sorts the elements of a sequence in the specified order (default: ascending)
+		 *
+		 * @static
+		 * @param {Loopable<number>} iterable - A sequence of values to order
+		 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
+		 * @returns {SortedIterable<number>} - A SortedInterable<T> whose elements are sorted
+		 *
+		 * @memberOf Ninq
+		 */
+		export function sortBy(iterable: Loopable<number>, descending?: boolean): SortedIterable<number> & Ninq<number>;
+		/**
+		 * Sorts the elements of a sequence in the specified order (default: ascending)
+		 *
+		 * @static
+		 * @param {Loopable<string>} iterable - A sequence of values to order
+		 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
+		 * @returns {SortedIterable<string>} - A SortedInterable<T> whose elements are sorted
+		 *
+		 * @memberOf Ninq
+		 */
+		export function sortBy(iterable: Loopable<string>, descending?: boolean): SortedIterable<string> & Ninq<string>;
+		/**
+		 * Sorts the elements of a sequence in the specified order (default: ascending) by using a specified comparer
+		 *
+		 * @static
+		 * @template T - The type of the elements of it
+		 * @param {Loopable<T>} iterable - A sequence of values to order
+		 * @param {Comparer<T>} comparer - A comparer to compare keys
+		 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
+		 * @returns {SortedIterable<T>} - A SortedInterable<T> whose elements are sorted
+		 *
+		 * @memberOf Ninq
+		 */
+		export function sortBy<T>(iterable: Loopable<T>, comparer: Comparer<T>, descending?: boolean): SortedIterable<T> & Ninq<T>;
+	}
+	interface Ninq<T> {
+		/**
+		 * Sorts the elements of the sequence in the specified order (default: ascending)
+		 *
+		 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
+		 * @returns {SortedIterable<T>} - A SortedInterable<T> whose elements are sorted
+		 *
+		 * @memberOf Ninq
+		 */
+		sortBy(descending?: boolean): SortedIterable<T>;
+		/**
+		 * Sorts the elements of the sequence in the specified order (default: ascending) by using a specified comparer
+		 *
+		 * @param {Comparer<T>} comparer - A comparer to compare keys
+		 * @param {boolean} [descending] - true for descending order; otherwise ascending order would be used
+		 * @returns {SortedIterable<T>} - A SortedInterable<T> whose elements are sorted
+		 *
+		 * @memberOf Ninq
+		 */
+		sortBy(comparer?: Comparer<T>, descending?: boolean): SortedIterable<T>;
+	}
+}
+
+Object.assign(Ninq, {
+	sortBy<T>(iterable: Loopable<T>, comparerOrDesc?: Comparer<T> | boolean, descending?: boolean): SortedIterable<T> & Ninq<T> {
+		let comparer: Comparer<T | Comparable>;
+		[comparer, descending] = !comparerOrDesc || typeof comparerOrDesc === 'boolean'
+			? [
+				(x: Comparable, y: Comparable) =>
+					x < y ? -1 :
+						x === y ? 0 :
+							1,
+				comparerOrDesc || descending
+			]
+			: [comparerOrDesc, descending];
+		iterable = ArrayLikeIterable.toIterable(iterable);
+
+		return new SortingIterable(iterable, comparer, descending) as any;
+	},
+});
+Object.assign(Ninq.prototype, {
+	sortBy<T>(
+		this: Ninq<T>,
+		compOrDesc?: Comparer<T> | boolean,
+		descending?: boolean
+	): SortedIterable<T> & Ninq<T> {
+		let comparer: Comparer<T>;
+		[comparer, descending] = !compOrDesc || (typeof compOrDesc === 'boolean')
+			? [defaultComparer, !!(compOrDesc || descending)]
+			: [compOrDesc, !!descending];
+
+		return Ninq.sortBy(<Iterable<T>>this[iterable], comparer, descending);
+
+		function defaultComparer(x: any, y: any) {
+			return x < y ? -1 :
+				x === y ? 0 :
+					1;
+		}
+	},
+});
