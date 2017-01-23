@@ -2,6 +2,7 @@ import { Predicate, Loopable } from './core/declarations';
 import { Ninq } from './core/ninq';
 import ArrayLikeIterable from './core/array-like-iterable';
 import { symbols } from './core/symbols';
+import { isArrayLike } from './core/array-like-iterable';
 const iterable = symbols.iterable;
 
 export class SkippingIterable<T> extends Ninq<T> {
@@ -93,7 +94,9 @@ Object.assign(Ninq, {
 		if (count < 0) {
 			throw new Error('count must be greater or equal to zero');
 		}
-		return Ninq.skipWhile(it, (_, index) => index < count);
+		return isArrayLike(it)
+			? new Ninq(new ArrayLikeIterable(it, count))
+			: Ninq.skipWhile(it, (_, index) => index < count);
 	},
 });
 Object.assign(Ninq.prototype, {
