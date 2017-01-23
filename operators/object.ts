@@ -38,6 +38,7 @@ export interface ObjectIterableExtension extends Ninq<Entry> {
 export interface EntryBase {
 	source: {};
 	type: EntryType;
+	data(safe?: boolean): any;
 }
 export interface PropertyEntry extends EntryBase {
 	name: string;
@@ -96,26 +97,30 @@ class ObjectIterable extends Ninq<Entry> implements ObjectIterableExtension {
 							const descriptor = Object.getOwnPropertyDescriptor(currentObj, name);
 
 							if (shouldReturned(descriptor)) {
-								yield {
+								yield appendData({
 									source: currentObj,
 									type: EntryType.property,
 									name,
 									descriptor,
-								} as PropertyEntry;
+								});
 							}
 						}
 					}
 					if (hasFlag(options, ObjectIterationOptions.symbols)) {
 						for (let sym of Object.getOwnPropertySymbols(currentObj)) {
-							yield {
+							yield appendData({
 								source: currentObj,
 								type: EntryType.symbol,
 								symbol: sym,
 								value: currentObj[sym],
-							} as SymbolEntry;
+							});
 						}
 					}
 
+					function appendData(entry: Partial<Entry>): Entry {
+						entry.data = data.bind(null, entry);
+						return entry as Entry;
+					}
 					function shouldNameReturned(name: string) {
 						if (hasFlag(options, ObjectIterationOptions.enumerableProperties)) {
 							return hasFlag(options, ObjectIterationOptions.nonEnumerableProperties) ||
@@ -197,22 +202,7 @@ class ObjectIterable extends Ninq<Entry> implements ObjectIterableExtension {
 			this._values = new Ninq({
 				*[Symbol.iterator]() {
 					for (let entry of <Iterable<Entry>>that) {
-						switch (entry.type) {
-							case EntryType.property: {
-								if (entry.descriptor.get) {
-									yield entry.descriptor.get.call(entry.source);
-								}
-								else if (!entry.descriptor.set) {
-									yield entry.descriptor.value;
-								}
-								break;
-							}
-							case EntryType.symbol: {
-								yield entry.value;
-								break;
-							}
-							default: break;
-						}
+						yield entry.data();
 					}
 
 				}
@@ -254,3 +244,24 @@ Object.assign(Ninq, {
 			.values();
 	}
 });
+
+function data(entry: Entry, safe = true): any {
+	switch (entry.type) {
+		case EntryType.property: {
+			if (entry.descriptor.get) {
+				return entry.descriptor.get.call(entry.source);
+			}
+			else if (!entry.descriptor.set) {
+				return entry.descriptor.value;
+			}
+			else if (!safe) {
+				throw Error('Cannot read write-only property');
+			}
+			break;
+		}
+		case EntryType.symbol: {
+			return entry.value;
+		}
+		default: break;
+	}
+}

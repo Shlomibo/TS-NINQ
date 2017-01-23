@@ -1,54 +1,8 @@
-import ConcatIterable from './operators/concat';
-import {
-	KeySelector,
-	Predicate,
-	EqualityComparer,
-	ReductionFunc,
-	Comparer,
-	Comparable,
-	ComparisonFunc,
-	Mapping,
-	Hash,
-	Lookup,
-	NinqLookup,
-	Loopable,
-	Action3,
-	Action,
-	NotNull,
-	IndexedHash,
-} from './declarations';
-import DistinctIterable from './operators/distinct';
-import ExceptIterable from './operators/except';
-import FilterIterable from './operators/filter';
-import { Grouping } from './operators/group-by';
-import GroupingIterable from './operators/group-by';
-import { GroupJoinEntry } from './operators/group-join';
-import GroupJoinIterable from './operators/group-join';
-import IntersectionIterator from './operators/intersect';
-import { JoinMatch } from './operators/join';
-import JoinIterable from './operators/join';
-import { SortedIterable, SortingIterable, isSortedIterable } from './operators/sortBy';
-import { ReverseIterable } from './operators/reverse';
-import { MappingIterable, MapManyIterable } from './operators/map';
-import { ZipIterable } from './operators/zip';
-import { SkippingIterable } from './operators/skip';
-import { TakeWhileIterable } from './operators/take';
-import { UnionIterable } from './operators/union';
-import { adaptTo } from './modules/object-adapter';
-import ArrayLikeIterable from './modules/array-like-iterable';
-import { isIterable, isArrayLike, ReverseArrayLikeIterable } from './modules/array-like-iterable';
-import * as funcs from './funcs';
-import { TraverseMapping, FirstTraverseMapping, LaterTraverseMapping } from './operators/traverse';
-import TraversingIterable from './operators/traverse';
-import { Entry, ObjectIterationOptions } from './operators/object';
-import ObjectIterable from './operators/object';
-import symbols from './symbols';
-import { isLoopable } from './array-like-iterable';
-
-const {
-	iterable,
-} = symbols;
-
+import { Loopable, KeySelector, ComparisonFunc, Action3, Action, NotNull, Hash, IndexedHash } from './declarations';
+import { isLoopable, isArrayLike, isIterable, ReverseArrayLikeIterable } from './array-like-iterable';
+import { iterable } from './symbols';
+import ArrayLikeIterable from './array-like-iterable';
+import * as funcs from '../funcs';
 
 /**
  * Provides functionality around iterables.
@@ -67,7 +21,7 @@ export class Ninq<T> implements Iterable<T> {
 	}
 
 	*[Symbol.iterator]() {
-		const it = ArrayLikeIterable.toIterable(this[iterable]);
+		const it = ArrayLikeIterable.toIterable(<Loopable<T>>this[iterable]);
 		yield* it;
 	}
 
@@ -174,9 +128,6 @@ export {
 	ArrayLikeIterable,
 	ReverseArrayLikeIterable,
 	NotNull,
-	TraverseMapping,
-	FirstTraverseMapping,
-	LaterTraverseMapping,
 	Hash,
 	IndexedHash,
 };
