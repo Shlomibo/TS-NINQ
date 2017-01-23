@@ -32,10 +32,15 @@ export function fromCallback<T>(multiArg = false)
 			}
 		};
 		handler.then =
-			(onFullfilled: any, onRejected: any) => 	resolvePromise.then(
+			(onFullfilled: any, onRejected: any) => resolvePromise.then(
 				onFullfilled,
 				onRejected
 			);
 	});
 	return handler;
+}
+export function $default<T>(x: T | undefined, defVal: T) {
+	return x === undefined
+		? defVal
+		: x;
 }
