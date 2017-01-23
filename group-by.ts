@@ -2,8 +2,7 @@ import { KeySelector, EqualityComparer } from './core/declarations';
 import { Ninq } from './core/ninq';
 import { Loopable } from './core/declarations';
 import ArrayLikeIterable from './core/array-like-iterable';
-import { symbols } from './core/symbols';
-const iterable = symbols.iterable;
+import { iterable } from './core/symbols';
 
 export interface Grouping<TKey, TElement> extends Iterable<TElement> {
 	readonly key: TKey;

@@ -1,8 +1,7 @@
 import { Predicate, Loopable } from './core/declarations';
 import { Ninq } from './core/ninq';
-import { symbols } from './core/symbols';
+import { iterable } from './core/symbols';
 import ArrayLikeIterable from './core/array-like-iterable';
-const iterable = symbols.iterable;
 
 class FilterIterable<T> extends Ninq<T> {
 	constructor(

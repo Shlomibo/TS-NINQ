@@ -1,9 +1,8 @@
 import { Predicate, Loopable } from './core/declarations';
 import { Ninq } from './core/ninq';
 import ArrayLikeIterable from './core/array-like-iterable';
-import { symbols } from './core/symbols';
+import { iterable } from './core/symbols';
 import { isArrayLike } from './core/array-like-iterable';
-const iterable = symbols.iterable;
 
 export class SkippingIterable<T> extends Ninq<T> {
 	constructor(

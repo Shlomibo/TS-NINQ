@@ -2,8 +2,7 @@ import { Ninq } from './core/ninq';
 import { Loopable } from './core/declarations';
 import { isArrayLike, ReverseArrayLikeIterable } from './core/array-like-iterable';
 import ArrayLikeIterable from './core/array-like-iterable';
-import symbols from './core/symbols';
-const iterable = symbols.iterable;
+import { iterable } from './core/symbols';
 
 export class ReverseIterable<T> extends Ninq<T> {
 	constructor(iterable: Iterable<T>) {

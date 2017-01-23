@@ -1,9 +1,8 @@
 import { EqualityComparer, Loopable } from './core/declarations';
 import { Ninq, extendToNinq } from './core/ninq';
 import ArrayLikeIterable from './core/array-like-iterable';
-import sym from './core/symbols';
+import { iterable } from './core/symbols';
 
-const iterable = sym.iterable;
 export interface Tracker<T> {
 	wasReturned(item: T): boolean;
 }

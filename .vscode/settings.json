@@ -3,5 +3,6 @@
 	"eslint.enable": false,
 	// A path added to NODE_PATH when resolving the tslint module.
 	"tslint.nodePath": "",
-	"typescript.tsdk": "./node_modules/typescript/lib"
+	"typescript.tsdk": "./node_modules/typescript/lib",
+	"vsicons.presets.angular": false
 }

@@ -1,8 +1,7 @@
 import { KeySelector, EqualityComparer, Loopable } from './core/declarations';
 import { Ninq } from './core/ninq';
 import ArrayLikeIterable from './core/array-like-iterable';
-import { symbols } from './core/symbols';
-const iterable = symbols.iterable;
+import { iterable } from './core/symbols';
 
 export interface JoinMatch<TOuter, TInner> {
 	outer: TOuter;

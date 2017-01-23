@@ -2,11 +2,10 @@ import { Comparer, Loopable, Comparable } from './core/declarations';
 import { TwoThreeTree } from './core/2-3-tree';
 import { Ninq } from './core/ninq';
 import ArrayLikeIterable from './core/array-like-iterable';
-import { symbols } from './core/symbols';
-const {
+import {
 	iterable,
-	comparer: compSym,
-} = symbols;
+	comparer as compSym,
+} from './core/symbols';
 
 /**
  * An iterable that is sorted

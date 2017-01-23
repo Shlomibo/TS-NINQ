@@ -2,8 +2,7 @@ import { EqualityComparer, Loopable } from './core/declarations';
 import { ComparerTracker } from './distinct';
 import { Ninq, extendToNinq } from './core/ninq';
 import ArrayLikeIterable from './core/array-like-iterable';
-import { symbols } from './core/symbols';
-const iterable = symbols.iterable;
+import { iterable } from './core/symbols';
 
 export default class IntersectionIterator<T> extends Ninq<T> {
 

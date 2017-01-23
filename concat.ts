@@ -3,9 +3,8 @@ import { Loopable } from './core/declarations';
 
 import { isLoopable } from './core/array-like-iterable';
 import ArrayLikeIterable from './core/array-like-iterable';
-import sym from './core/symbols';
+import { iterable } from './core/symbols';
 
-const iterable = sym.iterable;
 
 class ConcatIterable<T> extends Ninq<T> {
 
