@@ -1,8 +1,8 @@
-import { KeySelector, EqualityComparer } from './core/declarations';
-import { Ninq } from './core/ninq';
-import { Loopable } from './core/declarations';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
+import { KeySelector, EqualityComparer } from '../core/declarations';
+import { Ninq } from '../core/ninq';
+import { Loopable } from '../core/declarations';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
 
 export interface Grouping<TKey, TElement> extends Iterable<TElement> {
 	readonly key: TKey;
@@ -54,7 +54,7 @@ class GroupingIterable<TSource, TKey, TElement> extends Ninq<Grouping<TKey, TEle
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Groups the elements of a sequence according to a key selector function.

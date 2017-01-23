@@ -1,4 +1,4 @@
-import { Ninq } from './core/ninq';
+import { Ninq } from '../core/ninq';
 
 export enum ObjectIterationOptions {
 	default = 0x0,
@@ -223,7 +223,7 @@ class ObjectIterable extends Ninq<Entry> implements ObjectIterableExtension {
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Convert loopable object to Ninq

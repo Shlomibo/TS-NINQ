@@ -1,8 +1,8 @@
-import { Predicate, Loopable } from './core/declarations';
-import { Ninq } from './core/ninq';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
-import { isArrayLike } from './core/array-like-iterable';
+import { Predicate, Loopable } from '../core/declarations';
+import { Ninq } from '../core/ninq';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
+import { isArrayLike } from '../core/array-like-iterable';
 
 export class TakeWhileIterable<T> extends Ninq<T> {
 	constructor(
@@ -23,7 +23,7 @@ export class TakeWhileIterable<T> extends Ninq<T> {
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * - Returns elements from a sequence as long as a specified condition is true

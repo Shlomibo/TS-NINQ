@@ -1,4 +1,4 @@
-import { Ninq } from './core/ninq';
+import { Ninq } from '../core/ninq';
 
 class RepeatIterable<T> extends Ninq<T> {
 	constructor(element: T, count: number) {
@@ -15,7 +15,7 @@ class RepeatIterable<T> extends Ninq<T> {
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Generates a sequence that contains one repeated value

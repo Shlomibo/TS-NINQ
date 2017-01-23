@@ -1,4 +1,4 @@
-import { Ninq } from './core/ninq';
+import { Ninq } from '../core/ninq';
 
 class RangeIterable extends Ninq<number> {
 	constructor(count: number, start = 0, step = 1) {
@@ -18,7 +18,7 @@ class RangeIterable extends Ninq<number> {
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Generates a sequence of integral numbers within a specified range

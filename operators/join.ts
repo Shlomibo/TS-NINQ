@@ -1,7 +1,7 @@
-import { KeySelector, EqualityComparer, Loopable } from './core/declarations';
-import { Ninq } from './core/ninq';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
+import { KeySelector, EqualityComparer, Loopable } from '../core/declarations';
+import { Ninq } from '../core/ninq';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
 
 export interface JoinMatch<TOuter, TInner> {
 	outer: TOuter;
@@ -67,7 +67,7 @@ export default class JoinIterable<TOuter, TInner, TKey> extends Ninq<JoinMatch<T
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 			 * Correlates the elements of two sequences based on matching keys

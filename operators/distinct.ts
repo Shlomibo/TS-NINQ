@@ -1,7 +1,7 @@
-import { EqualityComparer, Loopable } from './core/declarations';
-import { Ninq, extendToNinq } from './core/ninq';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
+import { EqualityComparer, Loopable } from '../core/declarations';
+import { Ninq, extendToNinq } from '../core/ninq';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
 
 export interface Tracker<T> {
 	wasReturned(item: T): boolean;
@@ -57,7 +57,7 @@ class DistinctIterable<T> extends Ninq<T> {
 
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 
 		/**

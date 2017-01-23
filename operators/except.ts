@@ -1,7 +1,7 @@
-import { EqualityComparer, Loopable } from './core/declarations';
-import { Ninq } from './core/ninq';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
+import { EqualityComparer, Loopable } from '../core/declarations';
+import { Ninq } from '../core/ninq';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
 
 class ExceptIterable<T> extends Ninq<T> {
 	constructor(
@@ -34,7 +34,7 @@ class ExceptIterable<T> extends Ninq<T> {
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Produces the set difference of two sequences by using the specified IEqualityComparer<T> to compare values

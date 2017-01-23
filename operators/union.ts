@@ -1,9 +1,9 @@
-import { EqualityComparer } from './core/declarations';
+import { EqualityComparer } from '../core/declarations';
 import { ComparerTracker } from './distinct';
-import { Ninq, extendToNinq } from './core/ninq';
-import { Loopable } from './core/declarations';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
+import { Ninq, extendToNinq } from '../core/ninq';
+import { Loopable } from '../core/declarations';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
 
 export class UnionIterable<T> extends Ninq<T> {
 	constructor(
@@ -24,7 +24,7 @@ export class UnionIterable<T> extends Ninq<T> {
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Produces the set union of two sequences

@@ -1,7 +1,7 @@
-import { Ninq } from './core/ninq';
-import { Loopable } from './core/declarations';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
+import { Ninq } from '../core/ninq';
+import { Loopable } from '../core/declarations';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
 
 export interface TraverseMappingBase<T> {
 	current: T;
@@ -66,7 +66,7 @@ export class TraversingIterable<T> extends Ninq<TraverseMapping<T>> {
 
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Traverses consequencing element of an iterable

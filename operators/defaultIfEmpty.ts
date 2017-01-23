@@ -1,9 +1,9 @@
-import { Ninq } from './core/ninq';
-import { Loopable } from './core/declarations';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
+import { Ninq } from '../core/ninq';
+import { Loopable } from '../core/declarations';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Returns the elements of the specified sequence or the specified value in a singleton collection if the sequence is empty

@@ -1,7 +1,7 @@
-import { KeySelector, EqualityComparer, Loopable } from './core/declarations';
-import { Ninq } from './core/ninq';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
+import { KeySelector, EqualityComparer, Loopable } from '../core/declarations';
+import { Ninq } from '../core/ninq';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
 
 export interface GroupJoinEntry<TOuter, TInner> {
 	outer: TOuter;
@@ -72,7 +72,7 @@ export default class GroupJoinIterable<TOuter, TInner, TKey, TResult> extends Ni
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 			 * Correlates the elements of two sequences based on key equality and groups the results.

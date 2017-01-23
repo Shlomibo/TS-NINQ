@@ -1,9 +1,9 @@
-import { Ninq } from './core/ninq';
-import { Loopable } from './core/declarations';
+import { Ninq } from '../core/ninq';
+import { Loopable } from '../core/declarations';
 
-import { isLoopable } from './core/array-like-iterable';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
+import { isLoopable } from '../core/array-like-iterable';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
 
 
 class ConcatIterable<T> extends Ninq<T> {
@@ -26,7 +26,7 @@ class ConcatIterable<T> extends Ninq<T> {
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Return a concatination of this sequence and the provided sequences.

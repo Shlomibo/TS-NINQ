@@ -1,7 +1,7 @@
-import { Predicate, Loopable } from './core/declarations';
-import { Ninq } from './core/ninq';
-import { iterable } from './core/symbols';
-import ArrayLikeIterable from './core/array-like-iterable';
+import { Predicate, Loopable } from '../core/declarations';
+import { Ninq } from '../core/ninq';
+import { iterable } from '../core/symbols';
+import ArrayLikeIterable from '../core/array-like-iterable';
 
 class FilterIterable<T> extends Ninq<T> {
 	constructor(
@@ -21,7 +21,7 @@ class FilterIterable<T> extends Ninq<T> {
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Filters a sequence of values based on a predicate

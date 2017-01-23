@@ -1,9 +1,9 @@
-import { Ninq } from './core/ninq';
-import { Predicate, Loopable } from './core/declarations';
-import { iterable } from './core/symbols';
-import './filter';
+import { Ninq } from '../core/ninq';
+import { Predicate, Loopable } from '../core/declarations';
+import { iterable } from '../core/symbols';
+import '../filter';
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Splits an iterable into 2 iterables based on a predicate.

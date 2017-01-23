@@ -1,8 +1,8 @@
-import { Ninq } from './core/ninq';
-import { Loopable } from './core/declarations';
-import { isArrayLike, ReverseArrayLikeIterable } from './core/array-like-iterable';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
+import { Ninq } from '../core/ninq';
+import { Loopable } from '../core/declarations';
+import { isArrayLike, ReverseArrayLikeIterable } from '../core/array-like-iterable';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
 
 export class ReverseIterable<T> extends Ninq<T> {
 	constructor(iterable: Iterable<T>) {
@@ -17,7 +17,7 @@ export class ReverseIterable<T> extends Ninq<T> {
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Inverts the order of the elements in a sequence

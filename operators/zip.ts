@@ -1,7 +1,7 @@
-import { Ninq } from './core/ninq';
-import { Loopable } from './core/declarations';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
+import { Ninq } from '../core/ninq';
+import { Loopable } from '../core/declarations';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
 
 export class ZipIterable<T, U> extends Ninq<[T | undefined, U | undefined]> {
 	constructor(
@@ -37,7 +37,7 @@ export class ZipIterable<T, U> extends Ninq<[T | undefined, U | undefined]> {
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Return an array with the corresponding elements of two sequences, producing a sequence of the results

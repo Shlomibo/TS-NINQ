@@ -1,7 +1,7 @@
-import { Mapping, Loopable } from './core/declarations';
-import { Ninq } from './core/ninq';
-import ArrayLikeIterable from './core/array-like-iterable';
-import { iterable } from './core/symbols';
+import { Mapping, Loopable } from '../core/declarations';
+import { Ninq } from '../core/ninq';
+import ArrayLikeIterable from '../core/array-like-iterable';
+import { iterable } from '../core/symbols';
 
 export class MappingIterable<TSource, TResult> extends Ninq<TResult> {
 	constructor(
@@ -40,7 +40,7 @@ export class MapManyIterable<TSource, TCollection, TResult> extends Ninq<TResult
 	}
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 /**
 	 * Projects each element of a sequence into a new form by incorporating the element's index

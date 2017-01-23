@@ -1,11 +1,11 @@
-import { Comparer, Loopable, Comparable } from './core/declarations';
-import { TwoThreeTree } from './core/2-3-tree';
-import { Ninq } from './core/ninq';
-import ArrayLikeIterable from './core/array-like-iterable';
+import { Comparer, Loopable, Comparable } from '../core/declarations';
+import { TwoThreeTree } from '../core/2-3-tree';
+import { Ninq } from '../core/ninq';
+import ArrayLikeIterable from '../core/array-like-iterable';
 import {
 	iterable,
 	comparer as compSym,
-} from './core/symbols';
+} from '../core/symbols';
 
 /**
  * An iterable that is sorted
@@ -109,7 +109,7 @@ export function isSortedIterable<T>(iterable: Loopable<T>)
 	return typeof (iterable as any).thenBy === 'function';
 }
 
-declare module './core/ninq' {
+declare module '../core/ninq' {
 	namespace Ninq {
 		/**
 		 * Sorts the elements of a sequence in the specified order (default: ascending)
