@@ -28,3 +28,7 @@ export interface Hash<T> extends IndexedHash<T, T> { }
 export interface Lookup<K, V> extends Map<K, Iterable<V>> { }
 export interface NinqLookup<K, V> extends Map<K, Ninq<V>> { }
 export type NotNull = {} | boolean | number | string | symbol;
+
+export interface Constructor<T> {
+	new (): T;
+}
